@@ -26,27 +26,30 @@ const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
 `;
 
-// ── Compass-drawn Fibonacci spiral + candlesticks, self-animating on mount
+// ── Price bars with geometric overlays (triangle, square, pentagon, Gann box), self-animating on mount
 function HeroDrawing() {
-  const pathRef = useRef(null);
   const [drawn, setDrawn] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setDrawn(true), 300);
     return () => clearTimeout(t);
   }, []);
 
-  const candles = [
-    { x: 40, o: 210, c: 190, h: 220, l: 180, up: true },
-    { x: 66, o: 190, c: 205, h: 212, l: 185, up: false },
-    { x: 92, o: 205, c: 160, h: 210, l: 155, up: true },
-    { x: 118, o: 160, c: 175, h: 180, l: 150, up: false },
-    { x: 144, o: 175, c: 120, h: 180, l: 115, up: true },
-    { x: 170, o: 120, c: 140, h: 148, l: 112, up: false },
-    { x: 196, o: 140, c: 95, h: 145, l: 90, up: true },
-    { x: 222, o: 95, c: 108, h: 118, l: 88, up: false },
-    { x: 248, o: 108, c: 60, h: 112, l: 55, up: true },
-    { x: 274, o: 60, c: 78, h: 90, l: 52, up: false },
+  const bars = [
+    { x: 30, o: 210, c: 190, h: 220, l: 180, up: true },
+    { x: 56, o: 190, c: 205, h: 212, l: 185, up: false },
+    { x: 82, o: 205, c: 160, h: 210, l: 155, up: true },
+    { x: 108, o: 160, c: 175, h: 180, l: 150, up: false },
+    { x: 134, o: 175, c: 120, h: 180, l: 115, up: true },
+    { x: 160, o: 120, c: 140, h: 148, l: 112, up: false },
+    { x: 186, o: 140, c: 95, h: 145, l: 90, up: true },
+    { x: 212, o: 95, c: 108, h: 118, l: 88, up: false },
+    { x: 238, o: 108, c: 60, h: 112, l: 55, up: true },
+    { x: 264, o: 60, c: 78, h: 90, l: 52, up: false },
   ];
+
+  const gannBox = { x: 330, y: 40, w: 130, h: 130 };
+  const gannV = [gannBox.x + gannBox.w / 4, gannBox.x + gannBox.w / 2, gannBox.x + (gannBox.w * 3) / 4];
+  const gannH = [gannBox.y + gannBox.h / 4, gannBox.y + gannBox.h / 2, gannBox.y + (gannBox.h * 3) / 4];
 
   return (
     <svg viewBox="0 0 480 420" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
@@ -57,52 +60,59 @@ function HeroDrawing() {
       </defs>
       <rect x="0" y="0" width="480" height="420" fill="url(#blueprintGrid)" />
 
-      {/* candlesticks */}
-      {candles.map((k, i) => (
-        <g key={i} style={{ opacity: drawn ? 1 : 0, transition: `opacity 0.4s ease ${0.05 * i}s` }}>
-          <line x1={k.x + 8} y1={420 - k.h} x2={k.x + 8} y2={420 - k.l} stroke={k.up ? C.green : C.red} strokeWidth="1.5" />
-          <rect x={k.x} y={420 - Math.max(k.o, k.c)} width="16" height={Math.max(Math.abs(k.o - k.c), 2)}
-            fill={k.up ? C.green : C.red} opacity="0.9" />
-        </g>
-      ))}
+      {/* Pentagon — faint background, penta-vortex motif */}
+      <polygon
+        points="280,50 403.6,139.8 356.4,285.2 203.6,285.2 156.4,139.8"
+        fill="none" stroke={C.pink} strokeWidth="1.2"
+        opacity={drawn ? 0.22 : 0}
+        style={{ transition: 'opacity 1s ease 0.2s' }}
+      />
 
-      {/* Gann fan lines radiating from swing low */}
-      {[0.25, 0.5, 1, 2, 4].map((slope, i) => {
-        const x0 = 40, y0 = 400;
-        const x1 = 460;
-        const y1 = Math.max(20, y0 - (x1 - x0) * slope * 0.9);
+      {/* Triangle — ascending structure across the chart */}
+      <path
+        d="M 38 400 L 246 40 L 460 360 Z"
+        fill={C.gold} fillOpacity={drawn ? 0.05 : 0}
+        stroke={C.gold} strokeWidth="1.4" strokeDasharray="6 4"
+        opacity={drawn ? 1 : 0}
+        style={{ transition: 'opacity 0.9s ease 1.6s' }}
+      />
+
+      {/* Square — measured-move box with diagonals */}
+      <g opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.8s ease 1.1s' }}>
+        <rect x="82" y="240" width="140" height="140" fill="none" stroke={C.purple} strokeWidth="1.3" strokeDasharray="4 3" />
+        <line x1="82" y1="240" x2="222" y2="380" stroke={C.purple} strokeWidth="0.8" opacity="0.5" />
+        <line x1="222" y1="240" x2="82" y2="380" stroke={C.purple} strokeWidth="0.8" opacity="0.5" />
+      </g>
+
+      {/* Gann box — subdivided grid, top right */}
+      <g opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.8s ease 1.9s' }}>
+        <rect x={gannBox.x} y={gannBox.y} width={gannBox.w} height={gannBox.h} fill="none" stroke={C.blue} strokeWidth="1.3" />
+        {gannV.map((gx, i) => (
+          <line key={`v${i}`} x1={gx} y1={gannBox.y} x2={gx} y2={gannBox.y + gannBox.h} stroke={C.blue} strokeWidth="0.6" opacity="0.5" />
+        ))}
+        {gannH.map((gy, i) => (
+          <line key={`h${i}`} x1={gannBox.x} y1={gy} x2={gannBox.x + gannBox.w} y2={gy} stroke={C.blue} strokeWidth="0.6" opacity="0.5" />
+        ))}
+        <line x1={gannBox.x} y1={gannBox.y} x2={gannBox.x + gannBox.w} y2={gannBox.y + gannBox.h} stroke={C.blue} strokeWidth="0.7" opacity="0.6" />
+        <line x1={gannBox.x + gannBox.w} y1={gannBox.y} x2={gannBox.x} y2={gannBox.y + gannBox.h} stroke={C.blue} strokeWidth="0.7" opacity="0.6" />
+      </g>
+
+      {/* Price bars (OHLC) */}
+      {bars.map((k, i) => {
+        const yHigh = 420 - k.h, yLow = 420 - k.l, yOpen = 420 - k.o, yClose = 420 - k.c;
+        const cx = k.x + 8;
+        const color = k.up ? C.green : C.red;
         return (
-          <line key={i} x1={x0} y1={y0} x2={x1} y2={y1}
-            stroke={C.gold} strokeWidth={slope === 1 ? 1.4 : 0.7}
-            opacity={drawn ? (slope === 1 ? 0.85 : 0.35) : 0}
-            style={{ transition: `opacity 0.8s ease ${0.6 + i * 0.15}s` }}
-            strokeDasharray={slope === 1 ? 'none' : '3 3'} />
+          <g key={i} style={{ opacity: drawn ? 1 : 0, transition: `opacity 0.4s ease ${0.05 * i}s` }}>
+            <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth="1.5" />
+            <line x1={cx - 6} y1={yOpen} x2={cx} y2={yOpen} stroke={color} strokeWidth="1.5" />
+            <line x1={cx} y1={yClose} x2={cx + 6} y2={yClose} stroke={color} strokeWidth="1.5" />
+          </g>
         );
       })}
 
-      {/* Fibonacci spiral, hand-drawn compass style */}
-      <path
-        ref={pathRef}
-        d="M 248 210 
-           A 20 20 0 0 1 268 190
-           A 40 40 0 0 1 308 230
-           A 60 60 0 0 1 248 290
-           A 100 100 0 0 1 148 190
-           A 160 160 0 0 1 308 30"
-        fill="none"
-        stroke={C.purple}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        pathLength="1"
-        style={{
-          strokeDasharray: 1,
-          strokeDashoffset: drawn ? 0 : 1,
-          transition: 'stroke-dashoffset 1.8s cubic-bezier(0.65,0,0.35,1) 1.4s',
-        }}
-      />
-
-      {/* compass point marker */}
-      <circle cx="248" cy="210" r="3" fill={C.gold} opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.4s ease 1.3s' }} />
+      {/* Apex marker */}
+      <circle cx="246" cy="40" r="3.2" fill={C.gold} opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.4s ease 2.3s' }} />
     </svg>
   );
 }
@@ -205,7 +215,7 @@ function Nav() {
     <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(14,14,14,0.85)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${C.line}` }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3 L20 19 L4 19 Z" fill="none" stroke={C.gold} strokeWidth="1.6" /><circle cx="12" cy="3" r="1.8" fill={C.gold} /></svg>
+          <img src="/logo.png" alt="Geometriya" width="24" height="24" style={{ display: 'block' }} />
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, color: C.ink, letterSpacing: '0.3px' }}>GEOMETRIYA</span>
         </div>
         <div className="geo-nav-links" style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
