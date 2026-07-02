@@ -138,6 +138,67 @@ const TOOL_GROUPS = [
   { name: 'Zones & Measure', icon: 'zone', color: C.blue, desc: 'Demand/supply zones and precise count/target measurement tools for execution.' },
 ];
 
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mykqbgdn';
+
+function WaitlistForm() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('loading');
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        setStatus('success');
+        setEmail('');
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
+        ✓ You&rsquo;re on the list &mdash; we&rsquo;ll be in touch when access opens.
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <input
+        type="email"
+        required
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ background: C.bg, border: `1px solid ${C.line}`, color: C.ink, padding: '13px 16px', borderRadius: 3, fontSize: 14, minWidth: 260, fontFamily: "'Inter', sans-serif" }}
+      />
+      <button
+        type="submit"
+        disabled={status === 'loading'}
+        style={{ background: C.gold, color: '#161200', fontWeight: 600, fontSize: 14, padding: '13px 22px', borderRadius: 3, border: 'none', cursor: status === 'loading' ? 'default' : 'pointer', opacity: status === 'loading' ? 0.7 : 1 }}
+      >
+        {status === 'loading' ? 'Sending…' : 'Notify Me'}
+      </button>
+      {status === 'error' && (
+        <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+          Something went wrong &mdash; please try again.
+        </div>
+      )}
+    </form>
+  );
+}
+
 function Nav() {
   const [open, setOpen] = useState(false);
   return (
@@ -360,10 +421,7 @@ export default function GeometriyaLanding() {
           <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
             We&rsquo;re refining the full workspace before opening it up. Leave your email and we&rsquo;ll reach out when access opens.
           </p>
-          <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <input type="email" placeholder="you@example.com" style={{ background: C.bg, border: `1px solid ${C.line}`, color: C.ink, padding: '13px 16px', borderRadius: 3, fontSize: 14, minWidth: 260, fontFamily: "'Inter', sans-serif" }} />
-            <button type="submit" style={{ background: C.gold, color: '#161200', fontWeight: 600, fontSize: 14, padding: '13px 22px', borderRadius: 3, border: 'none', cursor: 'pointer' }}>Notify Me</button>
-          </form>
+          <WaitlistForm />
         </div>
       </section>
 
