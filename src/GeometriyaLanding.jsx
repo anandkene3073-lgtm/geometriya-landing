@@ -13,11 +13,11 @@ const C = {
   ink: '#E8E6E1',
   inkDim: '#8a8a86',
   inkFaint: '#4a4a48',
-  gold: '#EF9F27',
+  gold: '#3B82F6',
   green: '#1D9E75',
   red: '#E24B4A',
   purple: '#7F77DD',
-  blue: '#378ADD',
+  blue: '#22B8CF',
   pink: '#D4537E',
   paper: '#F4F1EA',
 };
@@ -186,7 +186,7 @@ function WaitlistForm() {
       <button
         type="submit"
         disabled={status === 'loading'}
-        style={{ background: C.gold, color: '#161200', fontWeight: 600, fontSize: 14, padding: '13px 22px', borderRadius: 3, border: 'none', cursor: status === 'loading' ? 'default' : 'pointer', opacity: status === 'loading' ? 0.7 : 1 }}
+        style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '13px 22px', borderRadius: 3, border: 'none', cursor: status === 'loading' ? 'default' : 'pointer', opacity: status === 'loading' ? 0.7 : 1 }}
       >
         {status === 'loading' ? 'Sending…' : 'Notify Me'}
       </button>
@@ -212,7 +212,7 @@ function Nav() {
           {['Method', 'Tools', 'Provenance', 'Pricing'].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: C.inkDim, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif" }}>{l}</a>
           ))}
-          <a href="#access" style={{ background: C.gold, color: '#161200', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Request Access</a>
+          <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Request Access</a>
         </div>
       </div>
     </div>
@@ -245,7 +245,7 @@ export default function GeometriyaLanding() {
               Almost every charting platform gives you the same indicators. Geometriya is built end‑to‑end on geometric analysis &mdash; Gann angles, Fibonacci construction, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <a href="#access" style={{ background: C.gold, color: '#161200', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>Request Early Access</a>
+              <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>Request Early Access</a>
               <a href="#tools" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>See the tools →</a>
             </div>
           </div>
@@ -362,7 +362,7 @@ export default function GeometriyaLanding() {
 
           {/* TRADER — highlighted */}
           <div className="geo-card" style={{ '--hc': C.gold, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column', borderColor: C.gold, position: 'relative' }}>
-            <div style={{ position: 'absolute', top: -12, left: 26, background: C.gold, color: '#161200', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", padding: '4px 10px', borderRadius: 3, letterSpacing: '0.5px' }}>MOST POPULAR</div>
+            <div style={{ position: 'absolute', top: -12, left: 26, background: C.gold, color: '#FFFFFF', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", padding: '4px 10px', borderRadius: 3, letterSpacing: '0.5px' }}>MOST POPULAR</div>
             <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.gold, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Trader</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹2,499</span>
@@ -382,7 +382,7 @@ export default function GeometriyaLanding() {
                 </li>
               ))}
             </ul>
-            <a href="#access" style={{ background: C.gold, color: '#161200', fontWeight: 600, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Request early access</a>
+            <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Request early access</a>
           </div>
 
           {/* TRADER + ALGO */}
