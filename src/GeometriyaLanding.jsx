@@ -151,6 +151,9 @@ const TOOL_GROUPS = [
 // ── Backend API base URL ──
 // Live backend, deployed on Render.
 const API_BASE_URL = 'https://geometriya-backend-render.onrender.com';
+// Where the trading app itself lives. Change this if you deploy it to a
+// different subdomain or path.
+const APP_URL = 'https://app.geometricalanalysis.com';
 
 function SignupForm() {
   const [step, setStep] = useState('details'); // details | otp | success | already_registered
@@ -225,6 +228,11 @@ function SignupForm() {
       if (!res.ok) throw new Error(data.error || 'Invalid code — please try again.');
       setStep('success');
       setStatus('idle');
+      // Hand the verified session off to the trading app. Since it lives on a
+      // different subdomain, localStorage can't be shared directly — so the
+      // token travels as a URL param, and the app picks it up on load.
+      const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
+      setTimeout(() => { window.location.href = dest; }, 1200);
     } catch (err) {
       setErrorMsg(err.message || 'Invalid code — please try again.');
       setStatus('error');
@@ -234,7 +242,11 @@ function SignupForm() {
   if (step === 'already_registered') {
     return (
       <div style={{ fontSize: 15, color: C.inkDim, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
-        This number is already registered. If you believe this is a mistake, reach out to us directly.
+        This number is already registered.{' '}
+        <a href={APP_URL} style={{ color: C.gold, textDecoration: 'underline' }}>
+          Go to Geometriya and log in with your phone number
+        </a>
+        {' '}instead — no need to sign up again.
       </div>
     );
   }
@@ -242,7 +254,7 @@ function SignupForm() {
   if (step === 'success') {
     return (
       <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
-        ✓ You&rsquo;re verified &mdash; your account is awaiting approval. We&rsquo;ll notify you the moment your 30-day trial is activated.
+        ✓ Verified — your 30-day trial is active. Taking you to Geometriya now…
       </div>
     );
   }
@@ -334,6 +346,7 @@ function Nav() {
           {['Method', 'Tools', 'Provenance', 'Pricing'].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: C.inkDim, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif" }}>{l}</a>
           ))}
+          <a href={APP_URL} style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Login</a>
           <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Request Access</a>
         </div>
       </div>
