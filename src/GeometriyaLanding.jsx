@@ -148,61 +148,173 @@ const TOOL_GROUPS = [
   { name: 'Zones & Measure', icon: 'zone', color: C.blue, desc: 'Demand/supply zones and precise count/target measurement tools for execution.' },
 ];
 
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mykqbgdn';
+// ── Backend API base URL ──
+// Live backend, deployed on Render.
+const API_BASE_URL = 'https://geometriya-backend-render.onrender.com';
 
-function WaitlistForm() {
+function SignupForm() {
+  const [step, setStep] = useState('details'); // details | otp | success | already_registered
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [otp, setOtp] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | loading | error
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = async (e) => {
+  const inputStyle = {
+    background: C.bg,
+    border: `1px solid ${C.line}`,
+    color: C.ink,
+    padding: '13px 16px',
+    borderRadius: 3,
+    fontSize: 14,
+    minWidth: 220,
+    fontFamily: "'Inter', sans-serif",
+  };
+
+  const buttonStyle = (disabled) => ({
+    background: C.gold,
+    color: '#FFFFFF',
+    fontWeight: 600,
+    fontSize: 14,
+    padding: '13px 22px',
+    borderRadius: 3,
+    border: 'none',
+    cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.7 : 1,
+  });
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!email) return;
+    if (!name || !phone) return;
     setStatus('loading');
+    setErrorMsg('');
     try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: JSON.stringify({ email }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, email: email || undefined }),
       });
-      if (res.ok) {
-        setStatus('success');
-        setEmail('');
-      } else {
-        setStatus('error');
+      const data = await res.json();
+      if (res.status === 409) {
+        setStep('already_registered');
+        setStatus('idle');
+        return;
       }
-    } catch {
+      if (!res.ok) throw new Error(data.error || 'Something went wrong');
+      setStep('otp');
+      setStatus('idle');
+    } catch (err) {
+      setErrorMsg(err.message || 'Something went wrong — please try again.');
       setStatus('error');
     }
   };
 
-  if (status === 'success') {
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp) return;
+    setStatus('loading');
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid code — please try again.');
+      setStep('success');
+      setStatus('idle');
+    } catch (err) {
+      setErrorMsg(err.message || 'Invalid code — please try again.');
+      setStatus('error');
+    }
+  };
+
+  if (step === 'already_registered') {
     return (
-      <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
-        ✓ You&rsquo;re on the list &mdash; we&rsquo;ll be in touch when access opens.
+      <div style={{ fontSize: 15, color: C.inkDim, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
+        This number is already registered. If you believe this is a mistake, reach out to us directly.
       </div>
     );
   }
 
+  if (step === 'success') {
+    return (
+      <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
+        ✓ You&rsquo;re verified &mdash; your account is awaiting approval. We&rsquo;ll notify you the moment your 30-day trial is activated.
+      </div>
+    );
+  }
+
+  if (step === 'otp') {
+    return (
+      <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          inputMode="numeric"
+          required
+          placeholder="Enter the code we sent you"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value)}
+          style={{ ...inputStyle, minWidth: 220, letterSpacing: 2 }}
+        />
+        <button type="submit" disabled={status === 'loading'} style={buttonStyle(status === 'loading')}>
+          {status === 'loading' ? 'Verifying…' : 'Verify'}
+        </button>
+        {status === 'error' && (
+          <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+            {errorMsg}
+          </div>
+        )}
+        <div style={{ width: '100%', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
+          Sent to {phone}. Didn&rsquo;t get it?{' '}
+          <span
+            onClick={() => { setStep('details'); setOtp(''); setStatus('idle'); setErrorMsg(''); }}
+            style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            Try again
+          </span>
+        </div>
+      </form>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+    <form onSubmit={handleSendOtp} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <input
+        type="text"
+        required
+        placeholder="Your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        style={inputStyle}
+      />
+      <input
+        type="tel"
+        required
+        placeholder="10-digit mobile number"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+        style={inputStyle}
+      />
       <input
         type="email"
-        required
-        placeholder="you@example.com"
+        placeholder="Email (optional)"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{ background: C.bg, border: `1px solid ${C.line}`, color: C.ink, padding: '13px 16px', borderRadius: 3, fontSize: 14, minWidth: 260, fontFamily: "'Inter', sans-serif" }}
+        style={{ ...inputStyle, minWidth: 220 }}
       />
       <button
         type="submit"
-        disabled={status === 'loading'}
-        style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '13px 22px', borderRadius: 3, border: 'none', cursor: status === 'loading' ? 'default' : 'pointer', opacity: status === 'loading' ? 0.7 : 1 }}
+        disabled={status === 'loading' || phone.length !== 10}
+        style={buttonStyle(status === 'loading' || phone.length !== 10)}
       >
-        {status === 'loading' ? 'Sending…' : 'Notify Me'}
+        {status === 'loading' ? 'Sending…' : 'Get Early Access'}
       </button>
       {status === 'error' && (
         <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
-          Something went wrong &mdash; please try again.
+          {errorMsg}
         </div>
       )}
     </form>
@@ -429,9 +541,9 @@ export default function GeometriyaLanding() {
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '72px 24px', textAlign: 'center' }}>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, marginBottom: 14 }}>Currently in private testing</h2>
           <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
-            We&rsquo;re refining the full workspace before opening it up. Leave your email and we&rsquo;ll reach out when access opens.
+            We&rsquo;re refining the full workspace before opening it up. Sign up with your mobile number and we&rsquo;ll verify you instantly &mdash; your 30-day trial starts as soon as we approve your access.
           </p>
-          <WaitlistForm />
+          <SignupForm />
         </div>
       </section>
 
