@@ -155,7 +155,7 @@ const API_BASE_URL = 'https://geometriya-backend-render.onrender.com';
 // different subdomain or path.
 const APP_URL = 'https://app.geometricalanalysis.com';
 
-function SignupForm() {
+function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [step, setStep] = useState('details'); // details | otp | success | already_registered
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -163,6 +163,26 @@ function SignupForm() {
   const [otp, setOtp] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | error
   const [errorMsg, setErrorMsg] = useState('');
+  const [planPrices, setPlanPrices] = useState({ monthlyINR: null, halfyearlyINR: null, yearlyINR: null });
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/payment/plan-info`).then(r => r.json()).then(setPlanPrices).catch(() => {});
+  }, []);
+
+  const PLAN_LABELS = {
+    monthly: () => `Monthly — ₹${planPrices.monthlyINR?.toLocaleString('en-IN') ?? '…'}`,
+    halfyearly: () => `6 Months — ₹${planPrices.halfyearlyINR?.toLocaleString('en-IN') ?? '…'}`,
+    yearly: () => `Yearly — ₹${planPrices.yearlyINR?.toLocaleString('en-IN') ?? '…'}`,
+  };
+
+  const loadRazorpayScript = () => new Promise((resolve) => {
+    if (window.Razorpay) { resolve(true); return; }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
   const inputStyle = {
     background: C.bg,
@@ -226,11 +246,64 @@ function SignupForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid code — please try again.');
+
+      if (selectedPlan) {
+        // Skip-trial path: go straight to Razorpay checkout for the chosen plan.
+        const scriptOk = await loadRazorpayScript();
+        if (!scriptOk) throw new Error('Could not load payment gateway. Check your connection and try again.');
+
+        const orderRes = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: data.phone, planType: selectedPlan }),
+        });
+        const order = await orderRes.json();
+        if (!orderRes.ok) throw new Error(order.error || 'Could not start payment.');
+
+        const rzp = new window.Razorpay({
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Geometriya',
+          description: `${selectedPlan} plan`,
+          order_id: order.orderId,
+          prefill: { name: order.name, contact: data.phone },
+          theme: { color: '#B98A3D' },
+          handler: async (response) => {
+            try {
+              const verifyRes = await fetch(`${API_BASE_URL}/api/payment/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  phone: data.phone,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.error || 'Payment verification failed.');
+              setStep('success');
+              setStatus('idle');
+              const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
+              setTimeout(() => { window.location.href = dest; }, 1200);
+            } catch (err) {
+              setErrorMsg(err.message);
+              setStatus('error');
+            }
+          },
+          modal: { ondismiss: () => setStatus('idle') },
+        });
+        rzp.open();
+        setStatus('idle');
+        return;
+      }
+
+      // Plain trial path — hand the verified session off to the trading app.
+      // Since it lives on a different subdomain, localStorage can't be shared
+      // directly — so the token travels as a URL param, and the app picks it up on load.
       setStep('success');
       setStatus('idle');
-      // Hand the verified session off to the trading app. Since it lives on a
-      // different subdomain, localStorage can't be shared directly — so the
-      // token travels as a URL param, and the app picks it up on load.
       const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
       setTimeout(() => { window.location.href = dest; }, 1200);
     } catch (err) {
@@ -254,14 +327,24 @@ function SignupForm() {
   if (step === 'success') {
     return (
       <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
-        ✓ Verified — your 30-day trial is active. Taking you to Geometriya now…
+        {selectedPlan
+          ? `✓ Payment confirmed — your ${selectedPlan === 'yearly' ? 'yearly' : selectedPlan === 'halfyearly' ? '6-month' : 'monthly'} plan is active. Taking you to Geometriya now…`
+          : '✓ Verified — your 30-day trial is active. Taking you to Geometriya now…'}
       </div>
     );
   }
 
+  const planBanner = selectedPlan && (
+    <div style={{ width: '100%', marginBottom: 4, fontSize: 13, color: C.ink, background: C.bgPanel, border: `1px solid ${C.gold}`, borderRadius: 4, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <span>Buying: <strong>{PLAN_LABELS[selectedPlan]()}</strong> — skipping the free trial</span>
+      <span onClick={clearSelectedPlan} style={{ color: C.inkFaint, cursor: 'pointer', textDecoration: 'underline', flexShrink: 0, fontSize: 12 }}>Use free trial instead</span>
+    </div>
+  );
+
   if (step === 'otp') {
     return (
       <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {planBanner}
         <input
           type="text"
           inputMode="numeric"
@@ -294,6 +377,7 @@ function SignupForm() {
 
   return (
     <form onSubmit={handleSendOtp} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {planBanner}
       <input
         type="text"
         required
@@ -357,6 +441,7 @@ function Nav() {
 }
 
 export default function GeometriyaLanding() {
+  const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'halfyearly' | 'yearly' — set when someone clicks "Buy now, skip trial"
   return (
     <div style={{ background: C.bg, color: C.ink, minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
       <style>{FONTS}{`
@@ -505,7 +590,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <div style={{ fontSize: 12, color: C.inkFaint, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}` }}>Available after your trial ends</div>
+            <a href="#access" onClick={() => setSelectedPlan('monthly')} style={{ display: 'block', fontSize: 12, color: C.gold, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now — skip trial</a>
           </div>
 
           {/* 6 MONTHS — highlighted */}
@@ -537,7 +622,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <div style={{ fontSize: 12, color: C.gold, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, fontWeight: 600 }}>Available after your trial ends</div>
+            <a href="#access" onClick={() => setSelectedPlan('halfyearly')} style={{ display: 'block', fontSize: 12, color: '#FFFFFF', background: C.gold, textAlign: 'center', padding: '10px 0', borderRadius: '0 0 4px 4px', textDecoration: 'none', fontWeight: 600 }}>Buy now — skip trial</a>
           </div>
 
           {/* YEARLY */}
@@ -567,12 +652,12 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <div style={{ fontSize: 12, color: C.inkFaint, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}` }}>Available after your trial ends</div>
+            <a href="#access" onClick={() => setSelectedPlan('yearly')} style={{ display: 'block', fontSize: 12, color: C.blue, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now — skip trial</a>
           </div>
         </div>
 
         <div style={{ marginTop: 32, textAlign: 'center' }}>
-          <a href="#access" style={{ display: 'inline-block', background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 30px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
+          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 30px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
           <p style={{ marginTop: 12, fontSize: 12.5, color: C.inkFaint }}>
             One trial, no plan chosen yet. You'll pick from the plans above only once your 30 days are up.
           </p>
@@ -593,7 +678,7 @@ export default function GeometriyaLanding() {
           <p style={{ color: C.gold, fontSize: 13.5, fontWeight: 600, marginBottom: 28 }}>
             30-day free trial &middot; No credit card required
           </p>
-          <SignupForm />
+          <SignupForm selectedPlan={selectedPlan} clearSelectedPlan={() => setSelectedPlan(null)} />
         </div>
       </section>
 
