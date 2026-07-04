@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometriya — Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  :root {
+    --bg:        #0A0F1C;
+    --panel:     #121A2B;
+    --panel-2:   #182238;
+    --border:    #232E47;
+    --text:      #E7ECF6;
+    --muted:     #8896B3;
+    --accent:    #3E7BFA;
+    --accent-2:  #6FA0FF;
+    --green:     #34D399;
+    --green-bg:  rgba(52, 211, 153, 0.12);
+    --amber:     #FBBF56;
+    --amber-bg:  rgba(251, 191, 86, 0.12);
+    --red:       #F26D6D;
+    --red-bg:    rgba(242, 109, 109, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; }
+  .logo span { color: var(--accent-2); font-weight: 500; }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 32px; margin-bottom: 24px;
+  }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; margin: 0 0 8px; }
+  p.sub { color: var(--muted); font-size: 14px; margin: 0 0 28px; line-height: 1.6; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  input[type=text], input[type=tel], input[type=number] {
+    width: 100%; padding: 11px 14px; font-size: 14px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px; color: var(--text); margin-bottom: 14px; outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  button.primary {
+    width: 100%; padding: 12px 14px; font-size: 14px; font-weight: 600;
+    background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer;
+  }
+  button.primary:disabled { background: var(--border); color: var(--muted); cursor: default; }
+  button.ghost {
+    width: 100%; padding: 10px 14px; font-size: 13px; font-weight: 500; margin-top: 8px;
+    background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+  }
+  .error { font-size: 12px; color: var(--red); margin: -6px 0 14px; }
+  .hidden { display: none !important; }
+  .price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .price { font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; }
+  .price-period { color: var(--muted); font-size: 14px; }
+  .plan-includes { list-style: none; padding: 0; margin: 20px 0 28px; }
+  .plan-includes li { padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; color: var(--text); }
+  .plan-includes li:first-child { border-top: none; }
+  .badge-active { display: inline-block; background: var(--green-bg); color: var(--green); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-bottom: 20px; }
+  .video-list { display: flex; flex-direction: column; gap: 10px; }
+  .video-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .video-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); width: 22px; flex-shrink: 0; }
+  .video-title { flex: 1; font-size: 14px; }
+  .video-status { font-size: 11px; padding: 3px 8px; border-radius: 10px; }
+  .video-status.ready { background: var(--green-bg); color: var(--green); }
+  .video-status.soon { background: var(--amber-bg); color: var(--amber); }
+  a.watch-link { color: var(--accent-2); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .book-box { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GEOMETRIYA <span>Research</span></div>
+</header>
+
+<main>
+
+  <!-- LOGIN CARD -->
+  <div class="card" id="loginCard">
+    <h1>Sign in</h1>
+    <p class="sub">Enter the phone number you signed up with on Geometriya. We'll text you a one-time code.</p>
+
+    <div id="phoneStep">
+      <label>Phone number</label>
+      <input type="tel" id="phoneInput" placeholder="10-digit mobile number">
+      <div class="error hidden" id="phoneError"></div>
+      <button class="primary" id="sendOtpBtn" onclick="sendOtp()">Send OTP</button>
+      <div style="margin-top:14px; font-size:12px; color:var(--muted);">
+        Not registered yet? <a href="https://www.geometricalanalysis.com/#access" style="color:var(--accent-2);">Sign up here first</a>.
+      </div>
+    </div>
+
+    <div id="otpStep" class="hidden">
+      <label>Enter the code</label>
+      <input type="text" id="otpInput" placeholder="OTP" maxlength="6">
+      <div class="error hidden" id="otpError"></div>
+      <button class="primary" id="verifyOtpBtn" onclick="verifyOtp()">Verify &amp; Continue</button>
+      <button class="ghost" onclick="backToPhone()">Back</button>
+    </div>
+  </div>
+
+  <!-- PAYWALL CARD -->
+  <div class="card hidden" id="paywallCard">
+    <h1>Unlock Research</h1>
+    <p class="sub">One yearly plan covers full access to the Geometriya trading app plus the complete Research library — the book and the full video course.</p>
+
+    <div class="price-row">
+      <span class="price" id="planPrice">₹—</span>
+      <span class="price-period">/ year</span>
+    </div>
+
+    <ul class="plan-includes">
+      <li>✓ Full Geometriya trading app access for 1 year</li>
+      <li>✓ The Geometriya method book</li>
+      <li>✓ 15-part video course, detailed study of geometrical analysis</li>
+    </ul>
+
+    <button class="primary" id="buyBtn" onclick="buyPlan()">Buy Yearly Plan</button>
+    <div class="error hidden" id="buyError"></div>
+  </div>
+
+  <!-- UNLOCKED CONTENT CARD -->
+  <div class="card hidden" id="contentCard">
+    <span class="badge-active" id="activeBadge">✓ Active</span>
+    <h1>Your Research Library</h1>
+    <p class="sub">Welcome back<span id="welcomeName"></span>. Everything below is included in your plan.</p>
+
+    <h2 style="font-size:16px; margin-bottom:12px;">The Book</h2>
+    <div class="book-box">
+      <span>The Geometriya Method — full PDF</span>
+      <a class="watch-link" id="bookLink" href="#" target="_blank" rel="noopener">Open book &rarr;</a>
+    </div>
+
+    <h2 style="font-size:16px; margin: 28px 0 12px;">Video Course (15 parts)</h2>
+    <div class="video-list" id="videoList"></div>
+  </div>
+
+</main>
+
+<script>
+  // Config
+  const API_BASE = 'https://geometriya-backend-render.onrender.com';
+
+  // EDIT THIS: once videos are produced, fill in title + embed/watch URL.
+  // Leave url as null for a video that isn't ready yet -- it'll show "Coming soon".
+  // Works with any host: YouTube, Vimeo, or a direct video link.
+  const VIDEOS = [
+    { title: 'Introduction to Mitotic Scaling', url: null },
+    { title: 'Reading the 45-degree angle', url: null },
+    { title: 'Dream 45 scanner walkthrough', url: null },
+    { title: 'Part 4', url: null },
+    { title: 'Part 5', url: null },
+    { title: 'Part 6', url: null },
+    { title: 'Part 7', url: null },
+    { title: 'Part 8', url: null },
+    { title: 'Part 9', url: null },
+    { title: 'Part 10', url: null },
+    { title: 'Part 11', url: null },
+    { title: 'Part 12', url: null },
+    { title: 'Part 13', url: null },
+    { title: 'Part 14', url: null },
+    { title: 'Part 15', url: null },
+  ];
+  // EDIT THIS: link to the actual book file once it's hosted somewhere (PDF link, Google Drive, etc).
+  const BOOK_URL = '#';
+
+  let currentPhone = '';
+
+  function show(id) { document.getElementById(id).classList.remove('hidden'); }
+  function hide(id) { document.getElementById(id).classList.add('hidden'); }
+  function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.remove('hidden'); }
+  function clearError(id) { document.getElementById(id).classList.add('hidden'); }
+
+  async function sendOtp() {
+    clearError('phoneError');
+    const raw = document.getElementById('phoneInput').value.trim();
+    if (!raw) { showError('phoneError', 'Enter your phone number.'); return; }
+    currentPhone = raw;
+    const btn = document.getElementById('sendOtpBtn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    try {
+      const res = await fetch(API_BASE + '/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: raw }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not send OTP.');
+      document.getElementById('phoneStep').classList.add('hidden');
+      show('otpStep');
+    } catch (e) {
+      showError('phoneError', e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send OTP';
+    }
+  }
+
+  function backToPhone() {
+    hide('otpStep');
+    document.getElementById('phoneStep').classList.remove('hidden');
+    clearError('otpError');
+  }
+
+  async function verifyOtp() {
+    clearError('otpError');
+    const otp = document.getElementById('otpInput').value.trim();
+    if (!otp) { showError('otpError', 'Enter the code.'); return; }
+    const btn = document.getElementById('verifyOtpBtn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+    try {
+      const res = await fetch(API_BASE + '/api/auth/verify-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: currentPhone, otp: otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid code.');
+      currentPhone = data.phone;
+      hide('loginCard');
+      if (data.research_access) {
+        showContent(data.name);
+      } else {
+        await showPaywall();
+      }
+    } catch (e) {
+      showError('otpError', e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Verify & Continue';
+    }
+  }
+
+  async function showPaywall() {
+    show('paywallCard');
+    try {
+      const res = await fetch(API_BASE + '/api/payment/plan-info');
+      const data = await res.json();
+      document.getElementById('planPrice').textContent = '\u20B9' + data.amountINR.toLocaleString('en-IN');
+    } catch (e) { /* price display is best-effort; buy flow still works without it */ }
+  }
+
+  function showContent(name) {
+    show('contentCard');
+    document.getElementById('welcomeName').textContent = name ? (', ' + name) : '';
+    document.getElementById('bookLink').href = BOOK_URL;
+    const list = document.getElementById('videoList');
+    list.innerHTML = VIDEOS.map(function (v, i) {
+      const num = String(i + 1).padStart(2, '0');
+      const right = v.url
+        ? '<a class="watch-link" href="' + v.url + '" target="_blank" rel="noopener">Watch &rarr;</a>'
+        : '<span class="video-status soon">Coming soon</span>';
+      return '<div class="video-item"><span class="video-num">' + num + '</span>' +
+        '<span class="video-title">' + v.title + '</span>' + right + '</div>';
+    }).join('');
+  }
+
+  async function buyPlan() {
+    clearError('buyError');
+    const btn = document.getElementById('buyBtn');
+    btn.disabled = true; btn.textContent = 'Please wait...';
+    try {
+      const orderRes = await fetch(API_BASE + '/api/payment/create-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: currentPhone }),
+      });
+      const order = await orderRes.json();
+      if (!orderRes.ok) throw new Error(order.error || 'Could not start payment.');
+
+      const rzp = new Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Geometriya',
+        description: 'Yearly plan -- trading app + Research access',
+        order_id: order.orderId,
+        prefill: { name: order.name, contact: currentPhone },
+        theme: { color: '#3E7BFA' },
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch(API_BASE + '/api/payment/verify', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: currentPhone,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok) throw new Error(verifyData.error || 'Payment verification failed.');
+            hide('paywallCard');
+            showContent(order.name);
+          } catch (e) {
+            showError('buyError', e.message);
+          }
+        },
+        modal: { ondismiss: function () { btn.disabled = false; btn.textContent = 'Buy Yearly Plan'; } },
+      });
+      rzp.open();
+    } catch (e) {
+      showError('buyError', e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Buy Yearly Plan';
+    }
+  }
+</script>
+
+</body>
+</html>
