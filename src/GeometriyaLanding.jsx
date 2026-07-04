@@ -469,90 +469,110 @@ export default function GeometriyaLanding() {
       {/* PRICING */}
       <section id="pricing" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px', borderTop: `1px solid ${C.line}` }}>
         <div style={{ marginBottom: 40, maxWidth: 620 }}>
-          <div className="geo-badge" style={{ marginBottom: 16 }}>Founding access</div>
+          <div className="geo-badge" style={{ marginBottom: 16 }}>Simple pricing</div>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 600, marginBottom: 10 }}>
-            Lock in early pricing before the public launch.
+            Start free. Pay only if you stay.
           </h2>
           <p style={{ color: C.inkDim, fontSize: 15 }}>
-            We&rsquo;re in private testing &mdash; founding members keep this pricing for as long as they stay subscribed, even after we raise it publicly.
+            Every plan starts with a 30-day free trial &mdash; no card required upfront. Pick a plan below only once your trial ends.
           </p>
         </div>
 
         <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
 
-          {/* READER */}
+          {/* MONTHLY */}
           <div className="geo-card" style={{ '--hc': C.inkFaint, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.inkFaint, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reader</div>
+            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.inkFaint, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>Free</span>
-            </div>
-            <div style={{ fontSize: 13, color: C.inkFaint, marginBottom: 22 }}>Start with the method itself</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
-              {[
-                'Geometrical Analysis — the book (Amazon)',
-                'Full framework: Gann, Fibonacci, Vortex, Mitotic Scaling',
-                'Documented chart examples & case studies',
-                'No workspace access',
-              ].map((f, i) => (
-                <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: i === 3 ? C.inkFaint : C.inkDim, lineHeight: 1.5 }}>
-                  <span style={{ color: i === 3 ? C.inkFaint : C.green, flexShrink: 0 }}>{i === 3 ? '—' : '✓'}</span>{f}
-                </li>
-              ))}
-            </ul>
-            <a href="#access" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Get the book</a>
-          </div>
-
-          {/* TRADER — highlighted */}
-          <div className="geo-card" style={{ '--hc': C.gold, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column', borderColor: C.gold, position: 'relative' }}>
-            <div style={{ position: 'absolute', top: -12, left: 26, background: C.gold, color: '#FFFFFF', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", padding: '4px 10px', borderRadius: 3, letterSpacing: '0.5px' }}>MOST POPULAR</div>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.gold, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Trader</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹2,499</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹1,199</span>
               <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ month</span>
             </div>
-            <div style={{ fontSize: 13, color: C.inkFaint, marginBottom: 22 }}>Founding price, locked for life of subscription</div>
+            <div style={{ fontSize: 13, color: C.inkFaint, marginBottom: 22 }}>Billed monthly, cancel any time</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
               {[
                 'Full Geometriya charting workspace',
-                'Gann, Fibonacci, Vortex & Geometric overlay tools',
+                'Gann, Fibonacci, Vortex & geometric overlay tools',
                 'Mitotic Scaling on every timeframe',
                 'Dream 45 scanner across your watchlist',
-                'Unlimited saved charts & drawings',
-              ].map((f, i) => (
-                <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: C.inkDim, lineHeight: 1.5 }}>
-                  <span style={{ color: C.gold, flexShrink: 0 }}>✓</span>{f}
-                </li>
-              ))}
+                { text: 'Research (book + video course)', off: true },
+              ].map((f, i) => {
+                const off = typeof f === 'object';
+                const text = off ? f.text : f;
+                return (
+                  <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: off ? C.inkFaint : C.inkDim, lineHeight: 1.5 }}>
+                    <span style={{ color: off ? C.inkFaint : C.green, flexShrink: 0 }}>{off ? '—' : '✓'}</span>{text}
+                  </li>
+                );
+              })}
             </ul>
-            <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Request early access</a>
+            <a href="#access" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Start Free Trial</a>
           </div>
 
-          {/* TRADER + ALGO */}
-          <div className="geo-card" style={{ '--hc': C.blue, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.blue, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Trader + Algo</div>
+          {/* 6 MONTHS — highlighted */}
+          <div className="geo-card" style={{ '--hc': C.gold, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column', borderColor: C.gold, position: 'relative' }}>
+            <div style={{ position: 'absolute', top: -12, left: 26, background: C.gold, color: '#FFFFFF', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", padding: '4px 10px', borderRadius: 3, letterSpacing: '0.5px' }}>MOST POPULAR</div>
+            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.gold, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>6 Months</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹3,999</span>
-              <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ month</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹6,299</span>
+              <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ 6 months</span>
             </div>
-            <div style={{ fontSize: 13, color: C.inkFaint, marginBottom: 22 }}>For traders who live inside TradingView</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
+              <span style={{ fontSize: 13, color: C.inkFaint }}>≈ ₹1,050/month</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: 'rgba(52,211,153,0.12)', padding: '2px 8px', borderRadius: 20 }}>Save 12%</span>
+            </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
               {[
-                'Everything in Trader',
-                'Geometriya Pine Script algo, invite-only on TradingView',
-                'Same geometric logic, running as automated signals',
-                'Priority access to new overlay releases',
-              ].map((f, i) => (
-                <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: C.inkDim, lineHeight: 1.5 }}>
-                  <span style={{ color: C.blue, flexShrink: 0 }}>✓</span>{f}
-                </li>
-              ))}
+                'Full Geometriya charting workspace',
+                'Gann, Fibonacci, Vortex & geometric overlay tools',
+                'Mitotic Scaling on every timeframe',
+                'Dream 45 scanner across your watchlist',
+                { text: 'Research (book + video course)', off: true },
+              ].map((f, i) => {
+                const off = typeof f === 'object';
+                const text = off ? f.text : f;
+                return (
+                  <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: off ? C.inkFaint : C.inkDim, lineHeight: 1.5 }}>
+                    <span style={{ color: off ? C.inkFaint : C.gold, flexShrink: 0 }}>{off ? '—' : '✓'}</span>{text}
+                  </li>
+                );
+              })}
             </ul>
-            <a href="#access" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Request early access</a>
+            <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Start Free Trial</a>
+          </div>
+
+          {/* YEARLY */}
+          <div className="geo-card" style={{ '--hc': C.blue, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.blue, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Yearly</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹9,999</span>
+              <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ year</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
+              <span style={{ fontSize: 13, color: C.inkFaint }}>≈ ₹833/month</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: 'rgba(52,211,153,0.12)', padding: '2px 8px', borderRadius: 20 }}>Save 30%</span>
+            </div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
+              {[
+                'Everything in the other plans',
+                'Full Geometriya charting workspace, all year',
+                { text: 'Research: the full book', bold: true },
+                { text: 'Research: 15-part video course', bold: true },
+              ].map((f, i) => {
+                const bold = typeof f === 'object';
+                const text = bold ? f.text : f;
+                return (
+                  <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: C.inkDim, lineHeight: 1.5, fontWeight: bold ? 600 : 400 }}>
+                    <span style={{ color: C.blue, flexShrink: 0 }}>✓</span>{text}
+                  </li>
+                );
+              })}
+            </ul>
+            <a href="#access" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Start Free Trial</a>
           </div>
         </div>
 
         <p style={{ marginTop: 24, fontSize: 12.5, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
-          Pricing shown for founding members during private testing. Public pricing will be announced at launch.
+          Discounts shown are versus the monthly rate (₹1,199/mo). Research (the book and video course) is included only with the yearly plan.
         </p>
       </section>
 
