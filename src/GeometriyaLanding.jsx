@@ -220,6 +220,21 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       });
       const data = await res.json();
       if (res.status === 409) {
+        if (selectedPlan) {
+          // They're buying a plan, not asking for a fresh trial — an existing
+          // account is fine here, just send them a login OTP instead of
+          // dead-ending on "already registered".
+          const loginRes = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone }),
+          });
+          const loginData = await loginRes.json();
+          if (!loginRes.ok) throw new Error(loginData.error || 'Could not send OTP.');
+          setStep('otp');
+          setStatus('idle');
+          return;
+        }
         setStep('already_registered');
         setStatus('idle');
         return;
