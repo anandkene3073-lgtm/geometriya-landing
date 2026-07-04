@@ -505,7 +505,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <a href="#access" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Start Free Trial</a>
+            <div style={{ fontSize: 12, color: C.inkFaint, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}` }}>Available after your trial ends</div>
           </div>
 
           {/* 6 MONTHS — highlighted */}
@@ -537,7 +537,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Start Free Trial</a>
+            <div style={{ fontSize: 12, color: C.gold, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, fontWeight: 600 }}>Available after your trial ends</div>
           </div>
 
           {/* YEARLY */}
@@ -567,8 +567,15 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <a href="#access" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14, padding: '12px 20px', borderRadius: 3, textDecoration: 'none', textAlign: 'center' }}>Start Free Trial</a>
+            <div style={{ fontSize: 12, color: C.inkFaint, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}` }}>Available after your trial ends</div>
           </div>
+        </div>
+
+        <div style={{ marginTop: 32, textAlign: 'center' }}>
+          <a href="#access" style={{ display: 'inline-block', background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 30px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
+          <p style={{ marginTop: 12, fontSize: 12.5, color: C.inkFaint }}>
+            One trial, no plan chosen yet. You'll pick from the plans above only once your 30 days are up.
+          </p>
         </div>
 
         <p style={{ marginTop: 24, fontSize: 12.5, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
