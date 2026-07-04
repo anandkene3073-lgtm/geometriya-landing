@@ -349,7 +349,7 @@ function Nav() {
           <a href={APP_URL} style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Login</a>
           <a href="https://www.geometricalanalysis.com/research.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Research</a>
           <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Admin</a>
-          <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Request Access</a>
+          <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
         </div>
       </div>
     </div>
@@ -382,7 +382,7 @@ export default function GeometriyaLanding() {
               Almost every charting platform gives you the same indicators. Geometriya is built end‑to‑end on geometric analysis &mdash; Gann angles, Fibonacci construction, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>Request Early Access</a>
+              <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
               <a href="#tools" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>See the tools →</a>
             </div>
             <div style={{ marginTop: 14, fontSize: 13, color: C.inkDim, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
