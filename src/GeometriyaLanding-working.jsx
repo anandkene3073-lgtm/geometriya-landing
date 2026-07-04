@@ -347,8 +347,6 @@ function Nav() {
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: C.inkDim, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif" }}>{l}</a>
           ))}
           <a href={APP_URL} style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Login</a>
-          <a href="https://www.geometricalanalysis.com/research.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Research</a>
-          <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Admin</a>
           <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Request Access</a>
         </div>
       </div>
@@ -384,11 +382,6 @@ export default function GeometriyaLanding() {
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>Request Early Access</a>
               <a href="#tools" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>See the tools →</a>
-            </div>
-            <div style={{ marginTop: 14, fontSize: 13, color: C.inkDim, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span>✓ 30-day free trial</span>
-              <span style={{ color: C.line }}>·</span>
-              <span>✓ No credit card required</span>
             </div>
           </div>
           <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.line}`, background: C.bgPanel }}>
@@ -560,11 +553,8 @@ export default function GeometriyaLanding() {
       <section id="access" style={{ borderTop: `1px solid ${C.line}`, background: C.bgPanel }}>
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '72px 24px', textAlign: 'center' }}>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, marginBottom: 14 }}>Currently in private testing</h2>
-          <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 10 }}>
+          <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
             We&rsquo;re refining the full workspace before opening it up. Sign up with your mobile number and we&rsquo;ll verify you instantly &mdash; your 30-day trial starts as soon as we approve your access.
-          </p>
-          <p style={{ color: C.gold, fontSize: 13.5, fontWeight: 600, marginBottom: 28 }}>
-            30-day free trial &middot; No credit card required
           </p>
           <SignupForm />
         </div>
