@@ -133,6 +133,9 @@
 
     <button class="primary" id="buyBtn" onclick="buyPlan()">Buy Yearly Plan</button>
     <div class="error hidden" id="buyError"></div>
+    <div style="font-size:12px; color:var(--muted); margin-top:14px; line-height:1.6;">
+      Already on the monthly trading-app plan? Research is a yearly-plan benefit — upgrading here also extends your trading app access to a full year.
+    </div>
   </div>
 
   <!-- UNLOCKED CONTENT CARD -->
@@ -248,7 +251,7 @@
     try {
       const res = await fetch(API_BASE + '/api/payment/plan-info');
       const data = await res.json();
-      document.getElementById('planPrice').textContent = '\u20B9' + data.amountINR.toLocaleString('en-IN');
+      document.getElementById('planPrice').textContent = '\u20B9' + data.yearlyINR.toLocaleString('en-IN');
     } catch (e) { /* price display is best-effort; buy flow still works without it */ }
   }
 
@@ -274,7 +277,7 @@
     try {
       const orderRes = await fetch(API_BASE + '/api/payment/create-order', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: currentPhone }),
+        body: JSON.stringify({ phone: currentPhone, planType: 'yearly' }),
       });
       const order = await orderRes.json();
       if (!orderRes.ok) throw new Error(order.error || 'Could not start payment.');
