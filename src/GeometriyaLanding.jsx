@@ -538,9 +538,13 @@ export default function GeometriyaLanding() {
               Charts don&rsquo;t scale in round numbers &mdash; markets compress and expand geometrically. Mitotic Scaling keeps angle and proportion meaningful at every zoom level, from the smallest tick to the widest multi-year view.
             </p>
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: C.inkFaint, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {[0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512].map(v => (
-              <span key={v} style={{ border: `1px solid ${C.line}`, padding: '6px 10px', borderRadius: 3, color: v === 1 ? C.gold : C.inkFaint, borderColor: v === 1 ? C.gold : C.line }}>{v}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 140 }}>
+            {[14, 20, 28, 40, 56, 78, 108, 140].map((h, i) => (
+              <div key={i} style={{
+                width: 18, height: h, borderRadius: 2,
+                background: i === 6 ? C.gold : 'transparent',
+                border: `1px solid ${i === 6 ? C.gold : C.line}`,
+              }} />
             ))}
           </div>
         </div>
