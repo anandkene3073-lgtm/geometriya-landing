@@ -448,7 +448,6 @@ function Nav() {
           <a href={APP_URL} style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Login</a>
           <a href="https://www.geometricalanalysis.com/research.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Research</a>
           <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Admin</a>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: C.green, background: 'rgba(52,211,153,0.12)', padding: '5px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>30 Days Free</span>
           <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
         </div>
       </div>
@@ -578,13 +577,9 @@ export default function GeometriyaLanding() {
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 600, marginBottom: 10 }}>
             Start free. Pay only if you stay.
           </h2>
-          <p style={{ color: C.inkDim, fontSize: 15, marginBottom: 16 }}>
+          <p style={{ color: C.inkDim, fontSize: 15 }}>
             Every plan starts with a 30-day free trial &mdash; no card required upfront. Pick a plan below only once your trial ends.
           </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(52,211,153,0.1)', border: `1px solid ${C.green}`, borderRadius: 6, padding: '10px 18px' }}>
-            <span style={{ fontSize: 20 }}>🎁</span>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: C.green }}>Full 30 days, completely free &mdash; no card, no charge, no catch.</span>
-          </div>
         </div>
 
         <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
@@ -614,7 +609,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <a href="#access" onClick={() => setSelectedPlan('monthly')} style={{ display: 'block', fontSize: 12, color: C.gold, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now</a>
+            <a href="#access" onClick={() => setSelectedPlan('monthly')} style={{ display: 'block', fontSize: 12, color: C.gold, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now — skip trial</a>
           </div>
 
           {/* 6 MONTHS — highlighted */}
@@ -646,7 +641,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <a href="#access" onClick={() => setSelectedPlan('halfyearly')} style={{ display: 'block', fontSize: 12, color: '#FFFFFF', background: C.gold, textAlign: 'center', padding: '10px 0', borderRadius: '0 0 4px 4px', textDecoration: 'none', fontWeight: 600 }}>Buy now</a>
+            <a href="#access" onClick={() => setSelectedPlan('halfyearly')} style={{ display: 'block', fontSize: 12, color: '#FFFFFF', background: C.gold, textAlign: 'center', padding: '10px 0', borderRadius: '0 0 4px 4px', textDecoration: 'none', fontWeight: 600 }}>Buy now — skip trial</a>
           </div>
 
           {/* YEARLY */}
@@ -676,7 +671,7 @@ export default function GeometriyaLanding() {
                 );
               })}
             </ul>
-            <a href="#access" onClick={() => setSelectedPlan('yearly')} style={{ display: 'block', fontSize: 12, color: C.blue, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now</a>
+            <a href="#access" onClick={() => setSelectedPlan('yearly')} style={{ display: 'block', fontSize: 12, color: C.blue, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now — skip trial</a>
           </div>
         </div>
 
