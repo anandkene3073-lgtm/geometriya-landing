@@ -535,7 +535,7 @@ export default function GeometriyaLanding() {
             <div className="geo-badge" style={{ marginBottom: 16 }}>Proprietary</div>
             <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(22px, 2.8vw, 30px)', fontWeight: 600, marginBottom: 16 }}>Mitotic Scaling</h2>
             <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 12 }}>
-              Charts don&rsquo;t scale in round numbers &mdash; markets compress and expand geometrically. Mitotic Scaling keeps angle and proportion meaningful at every zoom level, from the smallest tick to the widest multi-year view.
+              Charts don&rsquo;t scale in round numbers &mdash; markets compress and expand geometrically. Mitotic Scaling steps the chart through a doubling/halving series so angle and proportion stay meaningful at every zoom level, from 1/64 to 512.
             </p>
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: C.inkFaint, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
