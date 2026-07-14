@@ -117,6 +117,9 @@
   .btn-reject { background: var(--red-bg); border-color: var(--red); color: var(--red); }
   .btn-reject:hover { background: var(--red); color: #2a0a0a; }
 
+  .btn-delete { background: transparent; border-color: var(--red); color: var(--red); opacity: 0.7; }
+  .btn-delete:hover { background: var(--red); color: #2a0a0a; opacity: 1; }
+
   main { padding: 32px; max-width: 1100px; margin: 0 auto; }
 
   /* ── Login screen ── */
@@ -546,6 +549,7 @@
             ${currentTab === 'active'
               ? `<button class="btn btn-reject" onclick="deactivateUser('${u.id}')">Deactivate</button>`
               : `<button class="btn btn-approve" onclick="activateUser('${u.id}')">Reactivate</button>`}
+            <button class="btn btn-delete" onclick="deleteUser('${u.id}')">Delete</button>
           </div>
         </td>
       </tr>
@@ -577,6 +581,19 @@
     try {
       await apiCall(`/api/admin/activate/${id}`, { method: 'POST' });
       showToast('User reactivated.', 'success');
+      loadUsers();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function deleteUser(id) {
+    const u = [...allUsers.active, ...allUsers.deactivated].find(x => x.id === id);
+    const label = u ? `${u.name} (${formatPhone(u.phone)})` : 'this user';
+    if (!confirm(`Permanently delete ${label}? This cannot be undone — the phone number will be free to sign up again from scratch. Deactivate instead if you just want to revoke access.`)) return;
+    try {
+      await apiCall(`/api/admin/users/${id}`, { method: 'DELETE' });
+      showToast('User deleted.', 'success');
       loadUsers();
     } catch (e) {
       showToast(e.message, 'error');
