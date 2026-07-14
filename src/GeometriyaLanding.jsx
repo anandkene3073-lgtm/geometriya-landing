@@ -160,6 +160,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [channel, setChannel] = useState('email'); // 'email' | 'sms' — email is primary for now
   const [otp, setOtp] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | error
   const [errorMsg, setErrorMsg] = useState('');
@@ -210,13 +211,18 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!name || !phone) return;
+    if (channel === 'email' && !email) {
+      setErrorMsg('Please enter your email to receive the code.');
+      setStatus('error');
+      return;
+    }
     setStatus('loading');
     setErrorMsg('');
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, email: email || undefined }),
+        body: JSON.stringify({ name, phone, email: email || undefined, channel }),
       });
       const data = await res.json();
       if (res.status === 409) {
@@ -227,7 +233,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
           const loginRes = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone }),
+            body: JSON.stringify({ phone, channel }),
           });
           const loginData = await loginRes.json();
           if (!loginRes.ok) throw new Error(loginData.error || 'Could not send OTP.');
@@ -378,7 +384,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
           </div>
         )}
         <div style={{ width: '100%', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
-          Sent to {phone}. Didn&rsquo;t get it?{' '}
+          Sent to {channel === 'email' ? email : phone}. Didn&rsquo;t get it?{' '}
           <span
             onClick={() => { setStep('details'); setOtp(''); setStatus('idle'); setErrorMsg(''); }}
             style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
@@ -411,18 +417,36 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       />
       <input
         type="email"
-        placeholder="Email (optional)"
+        required={channel === 'email'}
+        placeholder={channel === 'email' ? 'Email (for your verification code)' : 'Email (optional)'}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         style={{ ...inputStyle, minWidth: 220 }}
       />
       <button
         type="submit"
-        disabled={status === 'loading' || phone.length !== 10}
-        style={buttonStyle(status === 'loading' || phone.length !== 10)}
+        disabled={status === 'loading' || phone.length !== 10 || (channel === 'email' && !email)}
+        style={buttonStyle(status === 'loading' || phone.length !== 10 || (channel === 'email' && !email))}
       >
         {status === 'loading' ? 'Sending…' : 'Get Early Access'}
       </button>
+      <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
+        {channel === 'email' ? (
+          <>
+            We&rsquo;ll email your verification code.{' '}
+            <span onClick={() => { setChannel('sms'); setStatus('idle'); setErrorMsg(''); }} style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}>
+              Prefer SMS instead?
+            </span>
+          </>
+        ) : (
+          <>
+            We&rsquo;ll text your verification code (SMS delivery may occasionally be delayed).{' '}
+            <span onClick={() => { setChannel('email'); setStatus('idle'); setErrorMsg(''); }} style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}>
+              Use email instead
+            </span>
+          </>
+        )}
+      </div>
       {status === 'error' && (
         <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
           {errorMsg}
