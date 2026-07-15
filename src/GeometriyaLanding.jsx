@@ -734,7 +734,10 @@ export default function GeometriyaLanding() {
       <footer style={{ borderTop: `1px solid ${C.line}` }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: C.inkFaint }}>GEOMETRIYA</span>
-          <span style={{ fontSize: 12, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>Geometric market analysis · India</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <a href="/privacy" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
+            <span style={{ fontSize: 12, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>Geometric market analysis · India</span>
+          </div>
         </div>
       </footer>
     </div>
