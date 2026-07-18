@@ -5,15 +5,20 @@ import { useState, useEffect, useRef } from "react";
 // "The world's only charting platform built entirely on geometric analysis."
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Palette matches the trading app's login/signup gate (navy background,
+// blue accent gradient) so the marketing site and the app feel like one
+// product instead of two different visual styles.
 const C = {
-  bg: '#0E0E0E',
-  bgPanel: '#141414',
-  bgPanel2: '#1a1a1a',
-  line: '#2a2a2a',
-  ink: '#E8E6E1',
-  inkDim: '#8a8a86',
-  inkFaint: '#4a4a48',
-  gold: '#3B82F6',
+  bg: '#060a14',
+  bgPanel: '#0a1424',
+  bgPanel2: '#101c33',
+  line: '#1e2f4d',
+  ink: '#e7edf7',
+  inkDim: '#8fa3c4',
+  inkFaint: '#5c7699',
+  gold: '#3E7BFA',
+  goldDeep: '#2F5FE0',
+  goldLight: '#7FB1FF',
   green: '#1D9E75',
   red: '#E24B4A',
   purple: '#7F77DD',
@@ -25,6 +30,16 @@ const C = {
 const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
 `;
+
+// Gradient background used behind the whole page and the sticky nav — same
+// radial-glow recipe as the app's login card so scrolling from the site
+// into the app doesn't feel like a jump cut.
+const PAGE_BG = `
+  radial-gradient(ellipse 1100px 600px at 15% 0%, rgba(62,123,250,0.14), transparent 60%),
+  radial-gradient(ellipse 900px 600px at 90% 100%, rgba(47,95,224,0.10), transparent 60%),
+  ${C.bg}
+`;
+const CTA_GRADIENT = `linear-gradient(90deg, #4A87FA, ${C.goldDeep})`;
 
 // ── Price bars with geometric overlays (triangle, square, pentagon, Gann box), self-animating on mount
 function HeroDrawing() {
@@ -186,26 +201,27 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   });
 
   const inputStyle = {
-    background: C.bg,
+    background: '#0c1526',
     border: `1px solid ${C.line}`,
     color: C.ink,
     padding: '13px 16px',
-    borderRadius: 3,
+    borderRadius: 8,
     fontSize: 14,
     minWidth: 220,
     fontFamily: "'Inter', sans-serif",
+    outline: 'none',
   };
 
   const buttonStyle = (disabled) => ({
-    background: C.gold,
-    color: '#FFFFFF',
+    background: disabled ? '#16233b' : CTA_GRADIENT,
+    boxShadow: disabled ? 'none' : '0 6px 18px rgba(47,95,224,0.32)',
+    color: disabled ? '#4c5f7d' : '#FFFFFF',
     fontWeight: 600,
     fontSize: 14,
     padding: '13px 22px',
-    borderRadius: 3,
+    borderRadius: 8,
     border: 'none',
     cursor: disabled ? 'default' : 'pointer',
-    opacity: disabled ? 0.7 : 1,
   });
 
   const handleSendOtp = async (e) => {
@@ -457,23 +473,19 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
 }
 
 function Nav() {
-  const [open, setOpen] = useState(false);
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(14,14,14,0.85)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${C.line}` }}>
+    <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(6,10,20,0.85)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${C.line}` }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <img src="/logo.png" alt="Geometriya" width="24" height="24" style={{ display: 'block' }} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, color: C.ink, letterSpacing: '0.3px' }}>GEOMETRIYA</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, letterSpacing: '0.3px', background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>GEOMETRIYA</span>
         </div>
-        <div className="geo-nav-links" style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
-          {['Method', 'Tools', 'Provenance', 'Pricing'].map(l => (
+        <div className="geo-nav-links" style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+          {['Method', 'Tools', 'Pricing'].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: C.inkDim, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif" }}>{l}</a>
           ))}
           <a href={APP_URL} style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Login</a>
-          <a href="https://www.geometricalanalysis.com/research.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Research</a>
-          <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Admin</a>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: C.green, background: 'rgba(52,211,153,0.12)', padding: '5px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>30 Days Free</span>
-          <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
+          <a href="#access" style={{ background: CTA_GRADIENT, boxShadow: '0 6px 16px rgba(47,95,224,0.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
         </div>
       </div>
     </div>
@@ -483,7 +495,7 @@ function Nav() {
 export default function GeometriyaLanding() {
   const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'halfyearly' | 'yearly' — set when someone clicks "Buy now, skip trial"
   return (
-    <div style={{ background: C.bg, color: C.ink, minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: PAGE_BG, color: C.ink, minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
       <style>{FONTS}{`
         html { scroll-behavior: smooth; }
         .geo-badge { display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; color:${C.inkFaint}; border:1px solid ${C.line}; padding:5px 10px; border-radius:20px; }
@@ -501,13 +513,13 @@ export default function GeometriyaLanding() {
           <div>
             <div className="geo-badge">Not an indicator platform</div>
             <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(34px, 4.4vw, 54px)', fontWeight: 700, lineHeight: 1.08, margin: '22px 0 20px', letterSpacing: '-0.5px' }}>
-              Markets move in <span style={{ color: C.gold }}>geometry.</span><br />We just draw it.
+              Markets move in <span style={{ background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>geometry.</span><br />We just draw it.
             </h1>
             <p style={{ fontSize: 16.5, lineHeight: 1.65, color: C.inkDim, maxWidth: 480, marginBottom: 30 }}>
               Almost every charting platform gives you the same indicators. Geometriya is built end‑to‑end on geometric analysis &mdash; Gann angles, Fibonacci construction, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <a href="#access" style={{ background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
+              <a href="#access" style={{ background: CTA_GRADIENT, boxShadow: '0 8px 22px rgba(47,95,224,0.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
               <a href="#tools" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>See the tools →</a>
             </div>
             <div style={{ marginTop: 14, fontSize: 13, color: C.inkDim, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -705,7 +717,7 @@ export default function GeometriyaLanding() {
         </div>
 
         <div style={{ marginTop: 32, textAlign: 'center' }}>
-          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: C.gold, color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 30px', borderRadius: 3, textDecoration: 'none' }}>Start Free Trial</a>
+          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: CTA_GRADIENT, boxShadow: '0 8px 22px rgba(47,95,224,0.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 30px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
           <p style={{ marginTop: 12, fontSize: 12.5, color: C.inkFaint }}>
             One trial, no plan chosen yet. You'll pick from the plans above only once your 30 days are up.
           </p>
@@ -734,7 +746,9 @@ export default function GeometriyaLanding() {
       <footer style={{ borderTop: `1px solid ${C.line}` }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: C.inkFaint }}>GEOMETRIYA</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <a href="#provenance" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Provenance</a>
+            <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Admin</a>
             <a href="/privacy" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
             <span style={{ fontSize: 12, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>Geometric market analysis · India</span>
           </div>
