@@ -35,24 +35,41 @@ const FONTS = `
 // Pure keyframe animation: cross-fades between two real product screenshots
 // (Gann 45° angle, then Mitotic triangle) with synced marker call-outs.
 const HERO_MONITOR_CSS = `
-  .monitor-wrap { width:100%; filter: drop-shadow(0 40px 90px rgba(0,0,0,.55)); }
-  .monitor { background:linear-gradient(160deg,#1b2130,#0d1119); border-radius:16px; padding:2px; box-shadow:0 0 0 1px rgba(255,255,255,.05) inset, 0 0 0 1px rgba(0,0,0,.6); position:relative; }
-  .browser-bar { display:flex; align-items:center; gap:10px; padding:11px 14px; background:linear-gradient(180deg,#161c2e,#121728); border-radius:14px 14px 0 0; }
+  .monitor-wrap { width:100%; max-width:480px; margin:0 auto; position:relative; filter: drop-shadow(0 35px 70px rgba(0,0,0,.55)); }
+  .monitor-wrap::before {
+    content:''; position:absolute; inset:-40px; z-index:-1; border-radius:28px;
+    background: radial-gradient(closest-side, rgba(90,131,255,.22), transparent 75%);
+    pointer-events:none;
+  }
+  .monitor {
+    background:linear-gradient(155deg,#3a4152,#20242f 45%,#14161d);
+    border-radius:20px; padding:14px 14px 34px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.08) inset,
+      0 1px 0 rgba(255,255,255,.12) inset,
+      0 -1px 0 rgba(0,0,0,.4) inset,
+      0 0 0 1px rgba(0,0,0,.5);
+    position:relative;
+  }
+  .monitor-cam { position:absolute; top:6px; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:#0a0c10; box-shadow:0 0 0 1.5px rgba(255,255,255,.06), inset 0 0 2px rgba(90,131,255,.6); }
+  .monitor-chin-dot { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); width:7px; height:7px; border-radius:50%; background:rgba(90,131,255,.5); box-shadow:0 0 8px 1px rgba(90,131,255,.6); }
+  .browser-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; background:linear-gradient(180deg,#181f30,#121728); border-radius:9px 9px 0 0; }
   .tl-dot { width:10px; height:10px; border-radius:50%; }
   .tl-red { background:#ff5f57; }
   .tl-yellow { background:#febc2e; }
   .tl-green { background:#28c840; }
   .addr-pill { flex:1; margin-left:6px; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); border-radius:999px; padding:5px 14px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; letter-spacing:.3px; color:#6b7aa0; }
   .addr-pill svg { opacity:.7; flex:none; }
-  .screen-outer { position:relative; border-radius:0 0 14px 14px; overflow:hidden; background:#050505; }
+  .screen-outer {
+    position:relative; border-radius:0 0 9px 9px; overflow:hidden; background:#050505;
+    box-shadow: 0 0 0 1px rgba(90,131,255,.12) inset;
+  }
   .glare { position:absolute; inset:0; z-index:8; pointer-events:none; background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,.05) 48%, rgba(255,255,255,.10) 50%, rgba(255,255,255,.05) 52%, transparent 60%); background-size:250% 250%; animation: gm-glare 26s linear infinite; }
   @keyframes gm-glare { 0% { background-position: 130% -30%; } 45% { background-position: -30% 130%; } 100% { background-position: -30% 130%; } }
-  .vignette { position:absolute; inset:0; z-index:7; pointer-events:none; box-shadow: inset 0 0 60px rgba(0,0,0,.55), inset 0 0 2px rgba(255,255,255,.06); }
-  .monitor-stand { width:120px; height:26px; margin:0 auto; background:linear-gradient(180deg,#171d2f,#0d1119); border-radius:0 0 10px 10px; }
-  .monitor-base { width:220px; height:10px; margin:0 auto; background:linear-gradient(180deg,#12182a,#0a0e18); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.5); }
+  .vignette { position:absolute; inset:0; z-index:7; pointer-events:none; box-shadow: inset 0 0 50px rgba(0,0,0,.5), inset 0 0 2px rgba(255,255,255,.08); }
 
   .frame { position:relative; width:100%; padding-top:80.472%; background:#050505; overflow:hidden; }
-  .frame .chart-img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
+  .frame .chart-img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; filter: brightness(1.1) contrast(1.08) saturate(1.12); }
 
   .mitotic-badge {
     position:absolute; top:10px; right:10px; z-index:5;
@@ -347,6 +364,7 @@ function HeroMonitor() {
   return (
     <div className="monitor-wrap">
       <div className="monitor">
+        <div className="monitor-cam"></div>
         <div className="browser-bar">
           <span className="tl-dot tl-red"></span>
           <span className="tl-dot tl-yellow"></span>
@@ -422,9 +440,8 @@ function HeroMonitor() {
             <div className="vignette"></div>
           </div>
         </div>
+        <div className="monitor-chin-dot"></div>
       </div>
-      <div className="monitor-stand"></div>
-      <div className="monitor-base"></div>
     </div>
   );
 }
@@ -810,7 +827,7 @@ export default function GeometriyaLanding() {
           <div>
             <div style={{ display: 'inline-block', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#7ea2ff', border: '1px solid rgba(126,162,255,.35)', borderRadius: 999, padding: '6px 16px' }}>NOT AN INDICATOR PLATFORM</div>
             <h1 style={{ fontSize: 'clamp(34px, 4.4vw, 48px)', fontWeight: 700, lineHeight: 1.08, margin: '18px 0 18px', letterSpacing: '-.02em' }}>
-              Markets move in <RdBrand>geometry.</RdBrand> We just draw it.
+              Markets move in <RdBrand>geometry,</RdBrand><br />we just draw it.
             </h1>
             <p style={{ fontSize: 15.5, lineHeight: 1.55, color: RD.inkDim, maxWidth: 480, marginBottom: 24 }}>
               Almost every charting platform gives you the same indicators. <RdBrand>Geometriya</RdBrand> is built end‑to‑end on <RdBrand>geometric</RdBrand> analysis &mdash; Gann angles, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
