@@ -298,15 +298,16 @@ function RdGlyph({ kind }) {
     squares: [<rect key={1} x={4} y={4} width={28} height={28} {...s} />, <rect key={2} x={4} y={14} width={17} height={18} {...s} opacity={.6} />, <rect key={3} x={4} y={21} width={10} height={11} {...s} opacity={.35} />],
     vortex: [<circle key={1} cx={18} cy={18} r={14} {...s} />, <circle key={2} cx={18} cy={18} r={8.5} {...s} opacity={.6} />, <circle key={3} cx={18} cy={18} r={3.5} {...s} opacity={.35} />],
     mitotic: [<circle key={1} cx={12} cy={18} r={8} {...s} />, <circle key={2} cx={24} cy={18} r={8} {...s} />, <circle key={3} cx={18} cy={18} r={14} {...s} opacity={.3} />],
+    scan: [<circle key={1} cx={15} cy={15} r={10} {...s} />, <line key={2} x1={22.5} y1={22.5} x2={32} y2={32} {...s} strokeLinecap="round" />, <line key={3} x1={15} y1={7} x2={15} y2={23} {...s} opacity={.4} />, <line key={4} x1={7} y1={15} x2={23} y2={15} {...s} opacity={.4} />],
   }[kind];
   return <svg width={36} height={36} viewBox="0 0 36 36">{inner}</svg>;
 }
 
 const RD_METHODS = [
-  { num: '01', kind: 'gann', title: '45° Angles (1×1)', body: <>Mark a confirmed swing low or high and <b style={{ color: RD.blue }}>GEOMETRIYA</b> plots the diagonal forward — with Auto Angles tracking new pivots for you as price prints them.</> },
-  { num: '02', kind: 'mitotic', title: 'Mitotic Scaling', body: 'Our proprietary price-per-bar scale. Lock it once and every 45° angle stays a true 45° through any pan, zoom, or timeframe on that stock.' },
-  { num: '03', kind: 'squares', title: 'Gann Squares', body: 'Gann Squares up to 8×8, Squaring of Range, and √ extensions — auto-anchored and steppable back through history.' },
-  { num: '04', kind: 'vortex', title: 'Vortex Cycles', body: 'Vortex, Tri-Vortex and Penta-Vortex arcs projected from pivots, so cyclical turn windows sit on your chart before price arrives.' },
+  { num: '01', kind: 'mitotic', title: 'Mitotic Scaling', body: 'Our proprietary price-per-bar scale. Lock it once and every 45° angle stays a true 45° through any pan, zoom, or timeframe on that stock.' },
+  { num: '02', kind: 'gann', title: 'Dream 45° (1×1)', body: 'From confirmed swings, geometry unfolds — Auto Angles make sure to give, pinpointing exact reversals.' },
+  { num: '03', kind: 'squares', title: 'Automatic Gann Squares', body: 'Extend seamlessly up to 8×8 and beyond — just click to apply across historical price action.' },
+  { num: '04', kind: 'scan', title: 'Scanners', body: 'Auto‑scan of all geometric behaviors — Dream 45°, Equilateral Triangles, Squaring of Range, and more.' },
 ];
 
 function TickerStrip() {
@@ -851,23 +852,23 @@ export default function GeometriyaLanding() {
       <section id="method" style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 24px 40px' }}>
         <div style={{ maxWidth: 640, marginBottom: 48 }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 16 }}>THE METHOD</div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(26px, 3.4vw, 38px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.1, marginBottom: 16 }}>
-            Four disciplines. One <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, color: RD.blue, textTransform: 'uppercase', letterSpacing: '.03em' }}>geometry</span> engine.
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.1, marginBottom: 18 }}>
+            Four disciplines.<br />One <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, color: RD.blue, textTransform: 'uppercase', letterSpacing: '.03em' }}>geometry</span> engine.
           </h2>
-          <p style={{ color: RD.inkDim, fontSize: 15.5, lineHeight: 1.65 }}>
-            Every tool constructs from price and time directly — no smoothing, no lag, no derivative of a derivative.
+          <p style={{ color: RD.inkDim, fontSize: 17, lineHeight: 1.65 }}>
+            Precision without filters. Geometry without compromise.
           </p>
         </div>
-        <div className="geo-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+        <div className="geo-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
           {RD_METHODS.map(m => (
-            <div key={m.num} className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '26px 22px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div key={m.num} className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '32px 26px 34px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <RdCorners />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <RdGlyph kind={m.kind} />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: RD.inkFaint }}>{m.num}</span>
               </div>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>{m.title}</div>
-              <div style={{ fontSize: 14, lineHeight: 1.6, color: RD.inkDim }}>{m.body}</div>
+              <div style={{ fontSize: 20, fontWeight: 600 }}>{m.title}</div>
+              <div style={{ fontSize: 14.5, lineHeight: 1.6, color: RD.inkDim }}>{m.body}</div>
             </div>
           ))}
         </div>
@@ -965,7 +966,7 @@ export default function GeometriyaLanding() {
         </div>
 
         <p style={{ marginTop: 28, textAlign: 'center', fontSize: 12.5, color: RD.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
-          Every plan starts with a 30-day free trial — no card required. Discounts shown are versus the monthly rate.
+          Every plan starts with a 30-day free trial — no card required.
         </p>
       </section>
 
@@ -1009,6 +1010,9 @@ export default function GeometriyaLanding() {
             <a href="#pricing" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Pricing</a>
             <a href="/privacy" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
             <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Admin</a>
+            {/* TODO: point this at the real Razorpay Payment Page/Button link once the
+                payment-gateway side is set up — placeholder "#" for now. */}
+            <a href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: RD.blue, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: `1px solid rgba(79,127,255,.4)`, borderRadius: 999, padding: '6px 16px' }}>🙏 Support the Project</a>
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#3d4a68' }}>© 2026 <RdBrand>Geometriya</RdBrand>. Markets are risk.</div>
         </div>
