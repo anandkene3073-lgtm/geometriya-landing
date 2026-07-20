@@ -31,6 +31,197 @@ const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
 `;
 
+// ── CSS for the animated hero "monitor" mockup (HeroMonitor component below).
+// Pure keyframe animation: cross-fades between two real product screenshots
+// (Gann 45° angle, then Mitotic triangle) with synced marker call-outs.
+const HERO_MONITOR_CSS = `
+  .monitor-wrap { width:100%; filter: drop-shadow(0 40px 90px rgba(0,0,0,.55)); }
+  .monitor { background:linear-gradient(160deg,#1b2130,#0d1119); border-radius:16px; padding:2px; box-shadow:0 0 0 1px rgba(255,255,255,.05) inset, 0 0 0 1px rgba(0,0,0,.6); position:relative; }
+  .browser-bar { display:flex; align-items:center; gap:10px; padding:11px 14px; background:linear-gradient(180deg,#161c2e,#121728); border-radius:14px 14px 0 0; }
+  .tl-dot { width:10px; height:10px; border-radius:50%; }
+  .tl-red { background:#ff5f57; }
+  .tl-yellow { background:#febc2e; }
+  .tl-green { background:#28c840; }
+  .addr-pill { flex:1; margin-left:6px; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); border-radius:999px; padding:5px 14px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; letter-spacing:.3px; color:#6b7aa0; }
+  .addr-pill svg { opacity:.7; flex:none; }
+  .screen-outer { position:relative; border-radius:0 0 14px 14px; overflow:hidden; background:#050505; }
+  .glare { position:absolute; inset:0; z-index:8; pointer-events:none; background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,.05) 48%, rgba(255,255,255,.10) 50%, rgba(255,255,255,.05) 52%, transparent 60%); background-size:250% 250%; animation: gm-glare 26s linear infinite; }
+  @keyframes gm-glare { 0% { background-position: 130% -30%; } 45% { background-position: -30% 130%; } 100% { background-position: -30% 130%; } }
+  .vignette { position:absolute; inset:0; z-index:7; pointer-events:none; box-shadow: inset 0 0 60px rgba(0,0,0,.55), inset 0 0 2px rgba(255,255,255,.06); }
+  .monitor-stand { width:120px; height:26px; margin:0 auto; background:linear-gradient(180deg,#171d2f,#0d1119); border-radius:0 0 10px 10px; }
+  .monitor-base { width:220px; height:10px; margin:0 auto; background:linear-gradient(180deg,#12182a,#0a0e18); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.5); }
+
+  .frame { position:relative; width:100%; padding-top:80.472%; background:#050505; overflow:hidden; }
+  .frame .chart-img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
+
+  .mitotic-badge {
+    position:absolute; top:10px; right:10px; z-index:5;
+    display:flex; align-items:center; gap:6px;
+    background:#0c2620; border:1px solid rgba(47,191,113,.4);
+    border-radius:999px; padding:4px 12px 4px 6px;
+    animation: gm-badge-pulse 26s ease-in-out infinite;
+  }
+  .mitotic-lock { width:16px; height:16px; border-radius:50%; background:#e6a419; display:flex; align-items:center; justify-content:center; }
+  .mitotic-text { font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; font-size:12px; color:#4fe0a0; letter-spacing:.2px; }
+  @keyframes gm-badge-pulse {
+    0%, 39%   { box-shadow:none; border-color:rgba(47,191,113,.4); }
+    41%       { box-shadow:0 0 0 4px rgba(230,164,25,.28), 0 0 18px 4px rgba(230,164,25,.5); border-color:#e6a419; }
+    43%       { box-shadow:none; border-color:rgba(47,191,113,.4); }
+    45%       { box-shadow:0 0 0 4px rgba(230,164,25,.28), 0 0 18px 4px rgba(230,164,25,.5); border-color:#e6a419; }
+    47%, 83%  { box-shadow:none; border-color:rgba(47,191,113,.4); }
+    85%       { box-shadow:0 0 0 4px rgba(230,164,25,.28), 0 0 18px 4px rgba(230,164,25,.5); border-color:#e6a419; }
+    87%       { box-shadow:none; border-color:rgba(47,191,113,.4); }
+    89%       { box-shadow:0 0 0 4px rgba(230,164,25,.28), 0 0 18px 4px rgba(230,164,25,.5); border-color:#e6a419; }
+    91%, 100% { box-shadow:none; border-color:rgba(47,191,113,.4); }
+  }
+
+  .scanline { position:absolute; top:0; bottom:0; left:0; width:2px; z-index:3; background:#e6a419; box-shadow:0 0 14px 3px rgba(230,164,25,.75); animation:gm-scan-p1 26s linear infinite; }
+  .scanline2 { position:absolute; top:0; bottom:0; left:0; width:2px; z-index:3; background:#e6a419; box-shadow:0 0 14px 3px rgba(230,164,25,.75); animation:gm-scan-p2 26s linear infinite; }
+
+  .marker { position:absolute; z-index:4; }
+  .m-ring { width:20px; height:20px; border-radius:50%; border:2px solid #e6a419; transform:translate(-50%,-50%) scale(.5); opacity:0; }
+  .m-dot { width:6px; height:6px; border-radius:50%; background:#e6a419; transform:translate(-50%,-50%); opacity:0; box-shadow:0 0 10px 3px rgba(230,164,25,.9); }
+  .m-label { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px; letter-spacing:1px; color:#e6a419; white-space:nowrap; opacity:0; }
+  .lbl-below { transform:translate(-50%,140%); }
+  .lbl-above { transform:translate(-50%,-160%); }
+  .lbl-below-far { transform:translate(-50%,220%); }
+  .lbl-below-tight { transform:translate(-50%,75%); }
+
+  .m-echo { width:26px; height:26px; border-radius:50%; border:1.5px solid #e6a419; transform:translate(-50%,-50%) scale(.6); opacity:0; z-index:3; }
+
+  .edge-glow {
+    position:absolute; z-index:2; transform-origin:0 0;
+    left:40.57%; top:46.89%; width:36.08%;
+    transform:rotate(42.83deg);
+    height:3px; border-radius:2px;
+    background:linear-gradient(90deg, rgba(230,164,25,0), #e6a419, rgba(230,164,25,0));
+    opacity:0; filter:drop-shadow(0 0 6px rgba(230,164,25,.8));
+    animation: gm-edge-glow 26s linear infinite;
+  }
+  .level-glow {
+    position:absolute; z-index:2; height:10px;
+    left:32.74%; width:34.05%; top:calc(72.8% - 5px);
+    border-top:2px dashed rgba(230,164,25,0);
+    animation: gm-level-glow 26s linear infinite;
+  }
+  .level-label{
+    position:absolute; z-index:4; left:49.77%; top:calc(72.8% + 10px);
+    transform:translateX(-50%);
+    font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; letter-spacing:1.5px; color:#e6a419;
+    white-space:nowrap; opacity:0; text-shadow:0 0 10px rgba(230,164,25,.5);
+    animation: gm-level-label 26s linear infinite;
+  }
+  .level-sublabel{
+    position:absolute; z-index:4; left:49.77%; top:calc(72.8% + 27px);
+    transform:translateX(-50%);
+    font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:1.2px; color:#4fe0a0;
+    white-space:nowrap; opacity:0;
+    animation: gm-level-label 26s linear infinite;
+  }
+
+  .chart1 { animation: gm-chart1-fade 26s linear infinite; }
+  @keyframes gm-chart1-fade { 0%, 44% { opacity:1; } 52%, 92% { opacity:0; } 100% { opacity:1; } }
+  @keyframes gm-scan-p1 {
+    0%{left:0%;opacity:0;} 1%{opacity:1;left:0%;}
+    15%{left:57.36%;opacity:1;} 20%{left:57.36%;opacity:1;}
+    25%{left:75.29%;opacity:1;} 30%{left:75.29%;opacity:1;}
+    32%{left:80.81%;opacity:1;} 37%{left:80.81%;opacity:1;}
+    39%{left:80.81%;opacity:0;} 50%,100%{left:0%;opacity:0;}
+  }
+  .m0-ring{left:4.24%;top:82.7%;animation:gm-flash0 26s linear infinite;}
+  .m0-dot{left:4.24%;top:82.7%;animation:gm-dot0 26s linear infinite;}
+  .m0-label{left:4.24%;top:82.7%;animation:gm-label0 26s linear infinite;}
+  @keyframes gm-flash0{0%,2%{opacity:0;transform:translate(-50%,-50%) scale(.5);}3.5%{opacity:1;transform:translate(-50%,-50%) scale(1);}4.5%{opacity:.3;transform:translate(-50%,-50%) scale(2);}5.5%{opacity:1;transform:translate(-50%,-50%) scale(1);}6.5%,50%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dot0{0%,2%{opacity:0;}3.5%,5.5%{opacity:1;}6.5%,50%,100%{opacity:0;}}
+  @keyframes gm-label0{0%,3.5%{opacity:0;}4.5%,5.5%{opacity:1;}6.5%,50%,100%{opacity:0;}}
+
+  .m1-ring{left:35.51%;top:33.2%;animation:gm-flash1 26s linear infinite;}
+  .m1-dot{left:35.51%;top:33.2%;animation:gm-dot1 26s linear infinite;}
+  .m1-label{left:35.51%;top:33.2%;animation:gm-label1 26s linear infinite;}
+  @keyframes gm-flash1{0%,8%{opacity:0;transform:translate(-50%,-50%) scale(.5);}10.3%{opacity:1;transform:translate(-50%,-50%) scale(1);}11.3%{opacity:.3;transform:translate(-50%,-50%) scale(2);}12.3%{opacity:1;transform:translate(-50%,-50%) scale(1);}13.3%,50%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dot1{0%,8%{opacity:0;}10.3%,12.3%{opacity:1;}13.3%,50%,100%{opacity:0;}}
+  @keyframes gm-label1{0%,10.3%{opacity:0;}11.3%,12.3%{opacity:1;}13.3%,50%,100%{opacity:0;}}
+
+  .m2-ring{left:57.36%;top:18.8%;animation:gm-flash2 26s linear infinite;}
+  .m2-dot{left:57.36%;top:18.8%;animation:gm-dot2 26s linear infinite;}
+  .m2-label{left:57.36%;top:18.8%;animation:gm-label2 26s linear infinite;}
+  @keyframes gm-flash2{0%,14%{opacity:0;transform:translate(-50%,-50%) scale(.5);}15%{opacity:1;transform:translate(-50%,-50%) scale(1);}16%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}17%{opacity:1;transform:translate(-50%,-50%) scale(1);}18%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}18.5%,20%{opacity:1;transform:translate(-50%,-50%) scale(1);}22%,50%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dot2{0%,14%{opacity:0;}15%,20%{opacity:1;}22%,50%,100%{opacity:0;}}
+  @keyframes gm-label2{0%,15%{opacity:0;}16%,20%{opacity:1;}22%,50%,100%{opacity:0;}}
+
+  .m3-ring{left:75.29%;top:58.3%;animation:gm-flash3 26s linear infinite;}
+  .m3-dot{left:75.29%;top:58.3%;animation:gm-dot3 26s linear infinite;}
+  .m3-label{left:75.29%;top:58.3%;animation:gm-label3 26s linear infinite;}
+  @keyframes gm-flash3{0%,24%{opacity:0;transform:translate(-50%,-50%) scale(.5);}25%{opacity:1;transform:translate(-50%,-50%) scale(1);}26%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}27%{opacity:1;transform:translate(-50%,-50%) scale(1);}28%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}28.5%,30%{opacity:1;transform:translate(-50%,-50%) scale(1);}32%,50%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dot3{0%,24%{opacity:0;}25%,30%{opacity:1;}32%,50%,100%{opacity:0;}}
+  @keyframes gm-label3{0%,25%{opacity:0;}26%,30%{opacity:1;}32%,50%,100%{opacity:0;}}
+
+  .m4-ring{left:80.81%;top:51.9%;animation:gm-flash4 26s linear infinite;}
+  .m4-dot{left:80.81%;top:51.9%;animation:gm-dot4 26s linear infinite;}
+  .m4-label{left:80.81%;top:51.9%;animation:gm-label4 26s linear infinite;}
+  @keyframes gm-flash4{0%,31%{opacity:0;transform:translate(-50%,-50%) scale(.5);}32%{opacity:1;transform:translate(-50%,-50%) scale(1);}33%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}34%{opacity:1;transform:translate(-50%,-50%) scale(1);}35%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}35.5%,37%{opacity:1;transform:translate(-50%,-50%) scale(1);}39%,50%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dot4{0%,31%{opacity:0;}32%,37%{opacity:1;}39%,50%,100%{opacity:0;}}
+  @keyframes gm-label4{0%,32%{opacity:0;}33%,37%{opacity:1;}39%,50%,100%{opacity:0;}}
+
+  .chart2 { animation: gm-chart2-fade 26s linear infinite; }
+  @keyframes gm-chart2-fade { 0%, 44%  { opacity:0; } 52%, 92% { opacity:1; } 100% { opacity:0; } }
+
+  @keyframes gm-scan-p2 {
+    0%,52%   { left:0%; opacity:0; }
+    53%      { left:0%; opacity:1; }
+    56%      { left:32.64%; opacity:1; }
+    60%      { left:32.64%; opacity:1; }
+    64%      { left:40.57%; opacity:1; }
+    68%      { left:40.57%; opacity:1; }
+    69%      { left:40.57%; opacity:.35; }
+    74%      { left:40.57%; opacity:.35; }
+    75%      { left:40.57%; opacity:1; }
+    78%      { left:67.03%; opacity:1; }
+    91%      { left:67.03%; opacity:1; }
+    92%      { left:67.03%; opacity:0; }
+    100%     { left:0%; opacity:0; }
+  }
+
+  .mA-ring{left:32.64%;top:90.74%;animation:gm-flashA 26s linear infinite;}
+  .mA-dot{left:32.64%;top:90.74%;animation:gm-dotA 26s linear infinite;}
+  .mA-label{left:32.64%;top:90.74%;animation:gm-labelA 26s linear infinite;}
+  @keyframes gm-flashA{0%,56%{opacity:0;transform:translate(-50%,-50%) scale(.5);}57.2%{opacity:1;transform:translate(-50%,-50%) scale(1);}58.2%{opacity:.3;transform:translate(-50%,-50%) scale(2.1);}59.2%{opacity:1;transform:translate(-50%,-50%) scale(1);}60%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dotA{0%,56%{opacity:0;}57.2%,59.2%{opacity:1;}60%,100%{opacity:0;}}
+  @keyframes gm-labelA{0%,57.2%{opacity:0;}58.2%,59.5%{opacity:1;}60%,100%{opacity:0;}}
+
+  .mB-ring{left:40.57%;top:46.89%;animation:gm-flashB 26s linear infinite;}
+  .mB-dot{left:40.57%;top:46.89%;animation:gm-dotB 26s linear infinite;}
+  .mB-label{left:40.57%;top:46.89%;animation:gm-labelB 26s linear infinite;}
+  @keyframes gm-flashB{0%,64%{opacity:0;transform:translate(-50%,-50%) scale(.5);}65.2%{opacity:1;transform:translate(-50%,-50%) scale(1);}66.2%{opacity:.3;transform:translate(-50%,-50%) scale(2.1);}67.2%{opacity:1;transform:translate(-50%,-50%) scale(1);}68%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dotB{0%,64%{opacity:0;}65.2%,67.2%{opacity:1;}68%,100%{opacity:0;}}
+  @keyframes gm-labelB{0%,65.2%{opacity:0;}66.2%,67.5%{opacity:1;}68%,100%{opacity:0;}}
+
+  @keyframes gm-level-glow{
+    0%,69%    { opacity:0; border-color:rgba(230,164,25,0); }
+    70.25%    { opacity:1; border-color:rgba(230,164,25,.9); box-shadow:0 0 14px 2px rgba(230,164,25,.5); }
+    71.5%     { opacity:.5; border-color:rgba(230,164,25,.4); }
+    72.75%    { opacity:1; border-color:rgba(230,164,25,.9); box-shadow:0 0 14px 2px rgba(230,164,25,.5); }
+    74%,100%  { opacity:0; border-color:rgba(230,164,25,0); }
+  }
+  @keyframes gm-level-label{0%,70%{opacity:0;}71%,73%{opacity:1;}74%,100%{opacity:0;}}
+
+  .mA-echo{left:32.64%;top:90.74%;animation:gm-echoA 26s linear infinite;}
+  .mB-echo{left:40.57%;top:46.89%;animation:gm-echoB 26s linear infinite;}
+  .mC-echo{left:67.03%;top:77.37%;animation:gm-echoC 26s linear infinite;}
+  @keyframes gm-echoA{0%,69%{opacity:0;transform:translate(-50%,-50%) scale(.6);}69.55%{opacity:.9;transform:translate(-50%,-50%) scale(1.3);}70.2%{opacity:0;transform:translate(-50%,-50%) scale(1.8);}70.3%,100%{opacity:0;transform:translate(-50%,-50%) scale(.6);}}
+  @keyframes gm-echoB{0%,70.67%{opacity:0;transform:translate(-50%,-50%) scale(.6);}71.2%{opacity:.9;transform:translate(-50%,-50%) scale(1.3);}71.9%{opacity:0;transform:translate(-50%,-50%) scale(1.8);}72%,100%{opacity:0;transform:translate(-50%,-50%) scale(.6);}}
+  @keyframes gm-echoC{0%,72.33%{opacity:0;transform:translate(-50%,-50%) scale(.6);}72.9%{opacity:.9;transform:translate(-50%,-50%) scale(1.3);}73.6%{opacity:0;transform:translate(-50%,-50%) scale(1.8);}73.7%,100%{opacity:0;transform:translate(-50%,-50%) scale(.6);}}
+
+  @keyframes gm-edge-glow{ 0%,75% { opacity:0; } 75.7% { opacity:1; } 76.6% { opacity:1; } 77%,100% { opacity:0; } }
+
+  .mC-ring{left:67.03%;top:77.37%;animation:gm-flashC 26s linear infinite;}
+  .mC-dot{left:67.03%;top:77.37%;animation:gm-dotC 26s linear infinite;}
+  .mC-label{left:67.03%;top:77.37%;animation:gm-labelC 26s linear infinite;}
+  @keyframes gm-flashC{0%,78%{opacity:0;transform:translate(-50%,-50%) scale(.5);}78.4%{opacity:1;transform:translate(-50%,-50%) scale(1);}78.9%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}79.3%{opacity:1;transform:translate(-50%,-50%) scale(1);}79.75%{opacity:.25;transform:translate(-50%,-50%) scale(2.2);}80%,80.6%{opacity:1;transform:translate(-50%,-50%) scale(1);}81.5%,100%{opacity:0;transform:translate(-50%,-50%) scale(.5);}}
+  @keyframes gm-dotC{0%,78%{opacity:0;}78.4%,80.6%{opacity:1;}81.5%,100%{opacity:0;}}
+  @keyframes gm-labelC{0%,78.4%{opacity:0;}78.9%,81%{opacity:1;}81.5%,100%{opacity:0;}}
+`;
+
 // Gradient background used behind the whole page and the sticky nav — same
 // radial-glow recipe as the app's login card so scrolling from the site
 // into the app doesn't feel like a jump cut.
@@ -41,94 +232,200 @@ const PAGE_BG = `
 `;
 const CTA_GRADIENT = `linear-gradient(90deg, #4A87FA, ${C.goldDeep})`;
 
-// ── Price bars with geometric overlays (triangle, square, pentagon, Gann box), self-animating on mount
-function HeroDrawing() {
-  const [drawn, setDrawn] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setDrawn(true), 300);
-    return () => clearTimeout(t);
-  }, []);
+// ── Extra palette + CSS for the redesigned sections below (ticker strip,
+// 4-card method grid, platform-contrast panel, CTA band). Scoped to these
+// new pieces so the rest of the page's existing styling is untouched.
+const RD = {
+  blue: '#4f7fff',
+  cyan: '#35d0e0',
+  green: '#2fbf71',
+  red: '#e2554f',
+  ink: '#e8edf8',
+  inkDim: '#94a3c0',
+  inkFaint: '#5a6a8f',
+  border: 'rgba(148,170,220,.12)',
+  panel: '#0a1020',
+};
 
-  const bars = [
-    { x: 30, o: 210, c: 190, h: 220, l: 180, up: true },
-    { x: 56, o: 190, c: 205, h: 212, l: 185, up: false },
-    { x: 82, o: 205, c: 160, h: 210, l: 155, up: true },
-    { x: 108, o: 160, c: 175, h: 180, l: 150, up: false },
-    { x: 134, o: 175, c: 120, h: 180, l: 115, up: true },
-    { x: 160, o: 120, c: 140, h: 148, l: 112, up: false },
-    { x: 186, o: 140, c: 95, h: 145, l: 90, up: true },
-    { x: 212, o: 95, c: 108, h: 118, l: 88, up: false },
-    { x: 238, o: 108, c: 60, h: 112, l: 55, up: true },
-    { x: 264, o: 60, c: 78, h: 90, l: 52, up: false },
-  ];
+const RD_PANEL_CSS = `
+  .rd-panel { position:relative; }
+  .rd-corner { position:absolute; width:10px; height:10px; border-color:rgba(79,127,255,.5); }
+  .rd-corner.tl { top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; }
+  .rd-corner.tr { top:-1px; right:-1px; border-top:2px solid; border-right:2px solid; }
+  .rd-corner.bl { bottom:-1px; left:-1px; border-bottom:2px solid; border-left:2px solid; }
+  .rd-corner.br { bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; }
+  .rd-panel:hover .rd-corner { border-color: rgba(79,127,255,1); }
+`;
 
-  const gannBox = { x: 330, y: 40, w: 130, h: 130 };
-  const gannV = [gannBox.x + gannBox.w / 4, gannBox.x + gannBox.w / 2, gannBox.x + (gannBox.w * 3) / 4];
-  const gannH = [gannBox.y + gannBox.h / 4, gannBox.y + gannBox.h / 2, gannBox.y + (gannBox.h * 3) / 4];
-
+function RdCorners() {
   return (
-    <svg viewBox="0 0 480 420" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <pattern id="blueprintGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-          <path d="M 20 0 L 0 0 0 20" fill="none" stroke={C.line} strokeWidth="0.5" opacity="0.4" />
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="480" height="420" fill="url(#blueprintGrid)" />
+    <>
+      <span className="rd-corner tl"></span>
+      <span className="rd-corner tr"></span>
+      <span className="rd-corner bl"></span>
+      <span className="rd-corner br"></span>
+    </>
+  );
+}
 
-      {/* Pentagon — faint background, penta-vortex motif */}
-      <polygon
-        points="280,50 403.6,139.8 356.4,285.2 203.6,285.2 156.4,139.8"
-        fill="none" stroke={C.pink} strokeWidth="1.2"
-        opacity={drawn ? 0.22 : 0}
-        style={{ transition: 'opacity 1s ease 0.2s' }}
-      />
+// Brand-styled inline word — Space Grotesk, uppercase, solid blue (matches the
+// redesign's treatment of "GEOMETRIYA" / "GEOMETRY" inside copy).
+function RdBrand({ children }) {
+  return <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, color: RD.blue, textTransform: 'uppercase', letterSpacing: '.03em' }}>{children}</span>;
+}
 
-      {/* Triangle — ascending structure across the chart */}
-      <path
-        d="M 38 400 L 246 40 L 460 360 Z"
-        fill={C.gold} fillOpacity={drawn ? 0.05 : 0}
-        stroke={C.gold} strokeWidth="1.4" strokeDasharray="6 4"
-        opacity={drawn ? 1 : 0}
-        style={{ transition: 'opacity 0.9s ease 1.6s' }}
-      />
+function RdGlyph({ kind }) {
+  const s = { stroke: RD.blue, strokeWidth: 1.8, fill: 'none' };
+  const inner = {
+    gann: [<line key={1} x1={4} y1={32} x2={32} y2={4} {...s} />, <line key={2} x1={4} y1={32} x2={32} y2={14} {...s} opacity={.6} />, <line key={3} x1={4} y1={32} x2={32} y2={24} {...s} opacity={.35} />],
+    squares: [<rect key={1} x={4} y={4} width={28} height={28} {...s} />, <rect key={2} x={4} y={14} width={17} height={18} {...s} opacity={.6} />, <rect key={3} x={4} y={21} width={10} height={11} {...s} opacity={.35} />],
+    vortex: [<circle key={1} cx={18} cy={18} r={14} {...s} />, <circle key={2} cx={18} cy={18} r={8.5} {...s} opacity={.6} />, <circle key={3} cx={18} cy={18} r={3.5} {...s} opacity={.35} />],
+    mitotic: [<circle key={1} cx={12} cy={18} r={8} {...s} />, <circle key={2} cx={24} cy={18} r={8} {...s} />, <circle key={3} cx={18} cy={18} r={14} {...s} opacity={.3} />],
+  }[kind];
+  return <svg width={36} height={36} viewBox="0 0 36 36">{inner}</svg>;
+}
 
-      {/* Square — measured-move box with diagonals */}
-      <g opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.8s ease 1.1s' }}>
-        <rect x="82" y="240" width="140" height="140" fill="none" stroke={C.purple} strokeWidth="1.3" strokeDasharray="4 3" />
-        <line x1="82" y1="240" x2="222" y2="380" stroke={C.purple} strokeWidth="0.8" opacity="0.5" />
-        <line x1="222" y1="240" x2="82" y2="380" stroke={C.purple} strokeWidth="0.8" opacity="0.5" />
-      </g>
+const RD_METHODS = [
+  { num: '01', kind: 'gann', title: '45° Angles (1×1)', body: <>Mark a confirmed swing low or high and <b style={{ color: RD.blue }}>GEOMETRIYA</b> plots the diagonal forward — with Auto Angles tracking new pivots for you as price prints them.</> },
+  { num: '02', kind: 'mitotic', title: 'Mitotic Scaling', body: 'Our proprietary price-per-bar scale. Lock it once and every 45° angle stays a true 45° through any pan, zoom, or timeframe on that stock.' },
+  { num: '03', kind: 'squares', title: 'Gann Squares', body: 'Gann Squares up to 8×8, Squaring of Range, and √ extensions — auto-anchored and steppable back through history.' },
+  { num: '04', kind: 'vortex', title: 'Vortex Cycles', body: 'Vortex, Tri-Vortex and Penta-Vortex arcs projected from pivots, so cyclical turn windows sit on your chart before price arrives.' },
+];
 
-      {/* Gann box — subdivided grid, top right */}
-      <g opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.8s ease 1.9s' }}>
-        <rect x={gannBox.x} y={gannBox.y} width={gannBox.w} height={gannBox.h} fill="none" stroke={C.blue} strokeWidth="1.3" />
-        {gannV.map((gx, i) => (
-          <line key={`v${i}`} x1={gx} y1={gannBox.y} x2={gx} y2={gannBox.y + gannBox.h} stroke={C.blue} strokeWidth="0.6" opacity="0.5" />
-        ))}
-        {gannH.map((gy, i) => (
-          <line key={`h${i}`} x1={gannBox.x} y1={gy} x2={gannBox.x + gannBox.w} y2={gy} stroke={C.blue} strokeWidth="0.6" opacity="0.5" />
-        ))}
-        <line x1={gannBox.x} y1={gannBox.y} x2={gannBox.x + gannBox.w} y2={gannBox.y + gannBox.h} stroke={C.blue} strokeWidth="0.7" opacity="0.6" />
-        <line x1={gannBox.x + gannBox.w} y1={gannBox.y} x2={gannBox.x} y2={gannBox.y + gannBox.h} stroke={C.blue} strokeWidth="0.7" opacity="0.6" />
-      </g>
+function TickerStrip() {
+  const items = ['GANN 1×1 · 45.00°', 'PENTA-VORTEX ARC', 'VORTEX CYCLE T+34', 'MITOTIC SCALE ×2.06', 'SQ9 · 144 · 360'];
+  return (
+    <div style={{ borderTop: `1px solid ${RD.border}`, borderBottom: `1px solid ${RD.border}`, background: '#070c18' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, letterSpacing: '.14em', color: RD.inkFaint }}>
+        {items.map((t, i) => <span key={i}>{t}</span>)}
+      </div>
+    </div>
+  );
+}
 
-      {/* Price bars (OHLC) */}
-      {bars.map((k, i) => {
-        const yHigh = 420 - k.h, yLow = 420 - k.l, yOpen = 420 - k.o, yClose = 420 - k.c;
-        const cx = k.x + 8;
-        const color = k.up ? C.green : C.red;
-        return (
-          <g key={i} style={{ opacity: drawn ? 1 : 0, transition: `opacity 0.4s ease ${0.05 * i}s` }}>
-            <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth="1.5" />
-            <line x1={cx - 6} y1={yOpen} x2={cx} y2={yOpen} stroke={color} strokeWidth="1.5" />
-            <line x1={cx} y1={yClose} x2={cx + 6} y2={yClose} stroke={color} strokeWidth="1.5" />
-          </g>
-        );
-      })}
+function ContrastSection() {
+  const rows = [
+    { text: 'Indicators computed from past averages — always late' },
+    { text: 'Same RSI, MACD, and moving averages as everyone else' },
+    { text: <><RdBrand>Geometry</RdBrand> buried as a drawing toolbar afterthought</> },
+  ];
+  const rowsGood = [
+    { text: 'Structure projected forward from price and time itself' },
+    { text: 'Auto-constructed Gann fans, Mitotic scales, and vortex arcs' },
+    { text: <><RdBrand>Geometry</RdBrand> is the platform — every pixel serves it</> },
+  ];
+  return (
+    <section id="tools" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px' }}>
+      <div className="rd-panel geo-hero-grid" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+        <RdCorners />
+        <div style={{ padding: '44px 40px', background: '#070c18', borderRight: `1px solid ${RD.border}` }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.inkFaint, marginBottom: 20 }}>EVERY OTHER PLATFORM</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 15.5, color: RD.inkDim }}>
+            {rows.map((r, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12 }}><span style={{ color: RD.red }}>✕</span><span>{r.text}</span></div>
+            ))}
+          </div>
+        </div>
+        <div style={{ padding: '44px 40px', background: 'linear-gradient(160deg, rgba(79,127,255,.09), rgba(53,208,224,.05))' }}>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: '.22em', color: RD.blue, marginBottom: 20 }}>GEOMETRIYA</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 15.5, color: RD.ink }}>
+            {rowsGood.map((r, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12 }}><span style={{ color: RD.green }}>✓</span><span>{r.text}</span></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-      {/* Apex marker */}
-      <circle cx="246" cy="40" r="3.2" fill={C.gold} opacity={drawn ? 1 : 0} style={{ transition: 'opacity 0.4s ease 2.3s' }} />
-    </svg>
+// ── Animated hero mockup: a "browser window" that cross-fades between two real
+// product screenshots (a Gann 45° angle setup, then a Mitotic triangle) with
+// synced marker call-outs, a scanning highlight line, and a badge glow — pure
+// CSS keyframe animation, no JS ticking required.
+function HeroMonitor() {
+  return (
+    <div className="monitor-wrap">
+      <div className="monitor">
+        <div className="browser-bar">
+          <span className="tl-dot tl-red"></span>
+          <span className="tl-dot tl-yellow"></span>
+          <span className="tl-dot tl-green"></span>
+          <div className="addr-pill">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><rect x="4" y="11" width="16" height="10" rx="2" fill="#6b7aa0"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#6b7aa0" strokeWidth="2.4" fill="none"></path></svg>
+            app.geometricalanalysis.com
+          </div>
+        </div>
+
+        <div className="screen-outer">
+          <div className="frame">
+            <img className="chart-img chart1" src="/hero-chart-gann.jpg" alt="Gann angle chart" />
+            <img className="chart-img chart2" src="/hero-chart-mitotic.jpg" alt="Mitotic triangle chart" />
+
+            <div className="mitotic-badge">
+              <div className="mitotic-lock">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
+                  <rect x="4" y="11" width="16" height="10" rx="2" fill="#1a1a1a"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#1a1a1a" strokeWidth="2.4" fill="none"></path>
+                </svg>
+              </div>
+              <span className="mitotic-text">Mitotic</span>
+            </div>
+
+            <div className="scanline"></div>
+            <div className="scanline2"></div>
+
+            {/* phase 1 markers */}
+            <div className="marker m-ring m0-ring"></div>
+            <div className="marker m-dot m0-dot"></div>
+            <div className="marker m-label lbl-below m0-label">LOW</div>
+
+            <div className="marker m-ring m1-ring"></div>
+            <div className="marker m-dot m1-dot"></div>
+            <div className="marker m-label lbl-above m1-label">HIGH</div>
+
+            <div className="marker m-ring m2-ring"></div>
+            <div className="marker m-dot m2-dot"></div>
+            <div className="marker m-label lbl-above m2-label">SWING HIGH</div>
+
+            <div className="marker m-ring m3-ring"></div>
+            <div className="marker m-dot m3-dot"></div>
+            <div className="marker m-label lbl-below m3-label">SQUARE EDGE</div>
+
+            <div className="marker m-ring m4-ring"></div>
+            <div className="marker m-dot m4-dot"></div>
+            <div className="marker m-label lbl-below-far m4-label">CYCLE COMPLETE</div>
+
+            {/* phase 2 markers: mitotic triangle A / B / C */}
+            <div className="edge-glow"></div>
+            <div className="level-glow"></div>
+            <div className="level-label">∛ ABC</div>
+            <div className="level-sublabel">STRONG SUPPORT</div>
+
+            <div className="marker m-ring mA-ring"></div>
+            <div className="marker m-dot mA-dot"></div>
+            <div className="marker m-label lbl-below-tight mA-label">LOW · A</div>
+
+            <div className="marker m-ring mB-ring"></div>
+            <div className="marker m-dot mB-dot"></div>
+            <div className="marker m-label lbl-above mB-label">HIGH · B</div>
+
+            <div className="marker m-ring mC-ring"></div>
+            <div className="marker m-dot mC-dot"></div>
+            <div className="marker m-label lbl-below mC-label">C</div>
+
+            <div className="marker m-echo mA-echo"></div>
+            <div className="marker m-echo mB-echo"></div>
+            <div className="marker m-echo mC-echo"></div>
+
+            <div className="glare"></div>
+            <div className="vignette"></div>
+          </div>
+        </div>
+      </div>
+      <div className="monitor-stand"></div>
+      <div className="monitor-base"></div>
+    </div>
   );
 }
 
@@ -476,16 +773,16 @@ function Nav() {
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(6,10,20,0.85)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${C.line}` }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <img src="/logo.png" alt="Geometriya" width="24" height="24" style={{ display: 'block' }} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, letterSpacing: '0.3px', background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>GEOMETRIYA</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src="/logo.svg" alt="Geometriya" width="26" height="26" style={{ display: 'block' }} />
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 17, letterSpacing: '.14em', color: RD.blue }}>GEOMETRIYA</span>
         </div>
-        <div className="geo-nav-links" style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+        <div className="geo-nav-links" style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
           {['Method', 'Tools', 'Pricing'].map(l => (
-            <a key={l} href={`#${l.toLowerCase()}`} style={{ color: C.inkDim, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif" }}>{l}</a>
+            <a key={l} href={`#${l.toLowerCase()}`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>{l}</a>
           ))}
-          <a href={APP_URL} style={{ color: C.ink, textDecoration: 'none', fontSize: 13.5, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>Login</a>
-          <a href="#access" style={{ background: CTA_GRADIENT, boxShadow: '0 6px 16px rgba(47,95,224,0.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 13, fontFamily: "'Inter', sans-serif", padding: '9px 18px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
+          <a href={APP_URL} style={{ color: RD.ink, textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Login</a>
+          <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
         </div>
       </div>
     </div>
@@ -495,8 +792,8 @@ function Nav() {
 export default function GeometriyaLanding() {
   const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'halfyearly' | 'yearly' — set when someone clicks "Buy now, skip trial"
   return (
-    <div style={{ background: PAGE_BG, color: C.ink, minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
-      <style>{FONTS}{`
+    <div style={{ background: PAGE_BG, color: RD.ink, minHeight: '100vh', fontFamily: "'Space Grotesk', sans-serif" }}>
+      <style>{FONTS}{HERO_MONITOR_CSS}{RD_PANEL_CSS}{`
         html { scroll-behavior: smooth; }
         .geo-badge { display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; color:${C.inkFaint}; border:1px solid ${C.line}; padding:5px 10px; border-radius:20px; }
         .geo-card { background:${C.bgPanel}; border:1px solid ${C.line}; transition: border-color 0.25s ease, transform 0.25s ease; }
@@ -511,222 +808,162 @@ export default function GeometriyaLanding() {
       <section style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px 40px' }}>
         <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 56, alignItems: 'center' }}>
           <div>
-            <div className="geo-badge">Not an indicator platform</div>
-            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(34px, 4.4vw, 54px)', fontWeight: 700, lineHeight: 1.08, margin: '22px 0 20px', letterSpacing: '-0.5px' }}>
-              Markets move in <span style={{ background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>geometry.</span><br />We just draw it.
+            <div style={{ display: 'inline-block', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#7ea2ff', border: '1px solid rgba(126,162,255,.35)', borderRadius: 999, padding: '6px 16px' }}>NOT AN INDICATOR PLATFORM</div>
+            <h1 style={{ fontSize: 'clamp(34px, 4.4vw, 48px)', fontWeight: 700, lineHeight: 1.08, margin: '18px 0 18px', letterSpacing: '-.02em' }}>
+              Markets move in <RdBrand>geometry.</RdBrand> We just draw it.
             </h1>
-            <p style={{ fontSize: 16.5, lineHeight: 1.65, color: C.inkDim, maxWidth: 480, marginBottom: 30 }}>
-              Almost every charting platform gives you the same indicators. Geometriya is built end‑to‑end on geometric analysis &mdash; Gann angles, Fibonacci construction, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
+            <p style={{ fontSize: 15.5, lineHeight: 1.55, color: RD.inkDim, maxWidth: 480, marginBottom: 24 }}>
+              Almost every charting platform gives you the same indicators. <RdBrand>Geometriya</RdBrand> is built end‑to‑end on <RdBrand>geometric</RdBrand> analysis &mdash; Gann angles, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
             </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <a href="#access" style={{ background: CTA_GRADIENT, boxShadow: '0 8px 22px rgba(47,95,224,0.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 26px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
-              <a href="#tools" style={{ border: `1px solid ${C.line}`, color: C.ink, fontWeight: 500, fontSize: 14.5, padding: '13px 26px', borderRadius: 3, textDecoration: 'none' }}>See the tools →</a>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+              <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
+              <a href="#tools" style={{ border: '1px solid rgba(148,170,220,.3)', color: RD.ink, fontWeight: 500, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>See the tools →</a>
             </div>
-            <div style={{ marginTop: 14, fontSize: 13, color: C.inkDim, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 24, fontSize: 14.5, color: RD.inkDim, fontFamily: "'IBM Plex Mono', monospace", flexWrap: 'wrap' }}>
               <span>✓ 30-day free trial</span>
-              <span style={{ color: C.line }}>·</span>
               <span>✓ No credit card required</span>
             </div>
           </div>
-          <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.line}`, background: C.bgPanel }}>
-            <HeroDrawing />
-          </div>
+          <HeroMonitor />
         </div>
       </section>
 
-      {/* WHY GEOMETRY */}
-      <section id="method" style={{ borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`, background: C.bgPanel }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px', textAlign: 'center' }}>
-          <div className="geo-badge" style={{ marginBottom: 18 }}>The method</div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 600, marginBottom: 18 }}>
-            Price and time aren&rsquo;t random. They&rsquo;re proportioned.
+      <TickerStrip />
+
+      {/* METHOD */}
+      <section id="method" style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 24px 40px' }}>
+        <div style={{ maxWidth: 640, marginBottom: 48 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 16 }}>THE METHOD</div>
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(26px, 3.4vw, 38px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.1, marginBottom: 16 }}>
+            Four disciplines. One <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, color: RD.blue, textTransform: 'uppercase', letterSpacing: '.03em' }}>geometry</span> engine.
           </h2>
-          <p style={{ color: C.inkDim, fontSize: 15.5, lineHeight: 1.75 }}>
-            W.D. Gann and R.N. Elliott built entire trading careers on geometric structure, not lagging averages. That tradition never got mainstream software &mdash; most platforms bolt on one Fibonacci tool and call it done. Geometriya was built the other way around: geometry first, everything else in service of it. Squares, circles, spirals, and angles are first-class citizens on the chart, not an afterthought in a menu.
+          <p style={{ color: RD.inkDim, fontSize: 15.5, lineHeight: 1.65 }}>
+            Every tool constructs from price and time directly — no smoothing, no lag, no derivative of a derivative.
           </p>
         </div>
-      </section>
-
-      {/* TOOLS */}
-      <section id="tools" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px' }}>
-        <div style={{ marginBottom: 40, maxWidth: 620 }}>
-          <div className="geo-badge" style={{ marginBottom: 16 }}>Instrument set</div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 600, marginBottom: 10 }}>Every overlay is a construction, not a formula preset.</h2>
-          <p style={{ color: C.inkDim, fontSize: 15 }}>The same toolset live inside the Geometriya workspace today.</p>
-        </div>
-        <div className="geo-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {TOOL_GROUPS.map(t => (
-            <div key={t.name} className="geo-card" style={{ '--hc': t.color, padding: '24px 22px', borderRadius: 6 }}>
-              <div style={{ marginBottom: 14 }}><ToolIcon shape={t.icon} color={t.color} /></div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15.5, marginBottom: 8, color: t.color }}>{t.name}</div>
-              <div style={{ fontSize: 13.5, color: C.inkDim, lineHeight: 1.6 }}>{t.desc}</div>
+        <div className="geo-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+          {RD_METHODS.map(m => (
+            <div key={m.num} className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '26px 22px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <RdCorners />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <RdGlyph kind={m.kind} />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: RD.inkFaint }}>{m.num}</span>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{m.title}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.6, color: RD.inkDim }}>{m.body}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* MITOTIC SCALING CALLOUT */}
-      <section style={{ borderTop: `1px solid ${C.line}`, background: `linear-gradient(180deg, ${C.bgPanel2} 0%, ${C.bg} 100%)` }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }} className="geo-hero-grid">
-          <div>
-            <div className="geo-badge" style={{ marginBottom: 16 }}>Proprietary</div>
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(22px, 2.8vw, 30px)', fontWeight: 600, marginBottom: 16 }}>Mitotic Scaling</h2>
-            <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 12 }}>
-              Charts don&rsquo;t scale in round numbers &mdash; markets compress and expand geometrically. Mitotic Scaling keeps angle and proportion meaningful at every zoom level, from the smallest tick to the widest multi-year view.
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 140 }}>
-            {[14, 20, 28, 40, 56, 78, 108, 140].map((h, i) => (
-              <div key={i} style={{
-                width: 18, height: h, borderRadius: 2,
-                background: i === 6 ? C.gold : 'transparent',
-                border: `1px solid ${i === 6 ? C.gold : C.line}`,
-              }} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PROVENANCE */}
-      <section id="provenance" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px', borderTop: `1px solid ${C.line}` }}>
-        <div className="geo-badge" style={{ marginBottom: 16 }}>Not invented last week</div>
-        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 600, marginBottom: 40, maxWidth: 640 }}>Built on research, not a weekend hackathon.</h2>
-        <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          <div className="geo-card" style={{ '--hc': C.gold, padding: '28px 26px', borderRadius: 6 }}>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.gold, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>The book</div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Geometrical Analysis</div>
-            <div style={{ fontSize: 13.5, color: C.inkDim, marginBottom: 14, lineHeight: 1.6 }}>By Anand Kene, published on Amazon. The framework behind Geometriya&rsquo;s tools started as years of documented geometric market research &mdash; the software is that research made interactive.</div>
-            <span style={{ fontSize: 12.5, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>Available on Amazon</span>
-          </div>
-          <div className="geo-card" style={{ '--hc': C.blue, padding: '28px 26px', borderRadius: 6 }}>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.blue, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>The algo</div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Live on TradingView</div>
-            <div style={{ fontSize: 13.5, color: C.inkDim, marginBottom: 14, lineHeight: 1.6 }}>The same geometric logic runs as a Pine Script algo on TradingView for traders who want it inside a chart they already use daily.</div>
-            <span style={{ fontSize: 12.5, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>Pine Script</span>
-          </div>
-        </div>
-      </section>
+      <ContrastSection />
 
       {/* PRICING */}
-      <section id="pricing" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px', borderTop: `1px solid ${C.line}` }}>
-        <div style={{ marginBottom: 40, maxWidth: 620 }}>
-          <div className="geo-badge" style={{ marginBottom: 16 }}>Simple pricing</div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 600, marginBottom: 10 }}>
-            Start free. Pay only if you stay.
+      <section id="pricing" style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 24px 110px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 18 }}>PRICING</div>
+          <h2 style={{ margin: 0, fontSize: 'clamp(28px, 3.6vw, 44px)', fontWeight: 700, letterSpacing: '-.015em' }}>
+            Pay for <RdBrand>geometry</RdBrand>, not bloat.
           </h2>
-          <p style={{ color: C.inkDim, fontSize: 15, marginBottom: 16 }}>
-            Every plan starts with a 30-day free trial &mdash; no card required upfront. Pick a plan below only once your trial ends.
-          </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(52,211,153,0.1)', border: `1px solid ${C.green}`, borderRadius: 6, padding: '10px 18px' }}>
-            <span style={{ fontSize: 20 }}>🎁</span>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: C.green }}>Full 30 days, completely free &mdash; no card, no charge, no catch.</span>
-          </div>
         </div>
 
-        <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
+        <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22, alignItems: 'stretch' }}>
 
-          {/* MONTHLY */}
-          <div className="geo-card" style={{ '--hc': C.inkFaint, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.inkFaint, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹1,199</span>
-              <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ month</span>
-            </div>
-            <div style={{ fontSize: 13, color: C.inkFaint, marginBottom: 22 }}>Billed monthly, cancel any time</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
-              {[
+          {[
+            {
+              plan: 'monthly', label: 'MONTHLY', labelColor: RD.inkDim, price: '₹1,199', period: '/ month',
+              sub: 'Billed monthly, cancel any time', save: null, featured: false,
+              features: [
                 'Full Geometriya charting workspace',
                 'Gann, Fibonacci, Vortex & geometric overlay tools',
                 'Mitotic Scaling on every timeframe',
                 'Dream 45 scanner across your watchlist',
                 { text: 'Research (book + video course)', off: true },
-              ].map((f, i) => {
-                const off = typeof f === 'object';
-                const text = off ? f.text : f;
-                return (
-                  <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: off ? C.inkFaint : C.inkDim, lineHeight: 1.5 }}>
-                    <span style={{ color: off ? C.inkFaint : C.green, flexShrink: 0 }}>{off ? '—' : '✓'}</span>{text}
-                  </li>
-                );
-              })}
-            </ul>
-            <a href="#access" onClick={() => setSelectedPlan('monthly')} style={{ display: 'block', fontSize: 12, color: C.gold, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now</a>
-          </div>
-
-          {/* 6 MONTHS — highlighted */}
-          <div className="geo-card" style={{ '--hc': C.gold, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column', borderColor: C.gold, position: 'relative' }}>
-            <div style={{ position: 'absolute', top: -12, left: 26, background: C.gold, color: '#FFFFFF', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", padding: '4px 10px', borderRadius: 3, letterSpacing: '0.5px' }}>MOST POPULAR</div>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.gold, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>6 Months</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹6,299</span>
-              <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ 6 months</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
-              <span style={{ fontSize: 13, color: C.inkFaint }}>≈ ₹1,050/month</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: 'rgba(52,211,153,0.12)', padding: '2px 8px', borderRadius: 20 }}>Save 12%</span>
-            </div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
-              {[
+              ],
+            },
+            {
+              plan: 'halfyearly', label: '6 MONTHS', labelColor: RD.blue, price: '₹6,299', period: '/ 6 months',
+              sub: '≈₹1,050/month', save: 'Save 12%', featured: true,
+              features: [
                 'Full Geometriya charting workspace',
                 'Gann, Fibonacci, Vortex & geometric overlay tools',
                 'Mitotic Scaling on every timeframe',
                 'Dream 45 scanner across your watchlist',
                 { text: 'Research (book + video course)', off: true },
-              ].map((f, i) => {
-                const off = typeof f === 'object';
-                const text = off ? f.text : f;
-                return (
-                  <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: off ? C.inkFaint : C.inkDim, lineHeight: 1.5 }}>
-                    <span style={{ color: off ? C.inkFaint : C.gold, flexShrink: 0 }}>{off ? '—' : '✓'}</span>{text}
-                  </li>
-                );
-              })}
-            </ul>
-            <a href="#access" onClick={() => setSelectedPlan('halfyearly')} style={{ display: 'block', fontSize: 12, color: '#FFFFFF', background: C.gold, textAlign: 'center', padding: '10px 0', borderRadius: '0 0 4px 4px', textDecoration: 'none', fontWeight: 600 }}>Buy now</a>
-          </div>
-
-          {/* YEARLY */}
-          <div className="geo-card" style={{ '--hc': C.blue, padding: '30px 26px', borderRadius: 6, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: C.blue, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Yearly</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 30 }}>₹9,999</span>
-              <span style={{ fontSize: 13.5, color: C.inkFaint }}>/ year</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
-              <span style={{ fontSize: 13, color: C.inkFaint }}>≈ ₹833/month</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: 'rgba(52,211,153,0.12)', padding: '2px 8px', borderRadius: 20 }}>Save 30%</span>
-            </div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
-              {[
+              ],
+            },
+            {
+              plan: 'yearly', label: 'YEARLY', labelColor: RD.cyan, price: '₹9,999', period: '/ year',
+              sub: '≈₹833/month', save: 'Save 30%', featured: false,
+              features: [
                 'Everything in the other plans',
                 'Full Geometriya charting workspace, all year',
                 { text: 'Research: the full book', bold: true },
                 { text: 'Research: 15-part video course', bold: true },
-              ].map((f, i) => {
-                const bold = typeof f === 'object';
-                const text = bold ? f.text : f;
-                return (
-                  <li key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: C.inkDim, lineHeight: 1.5, fontWeight: bold ? 600 : 400 }}>
-                    <span style={{ color: C.blue, flexShrink: 0 }}>✓</span>{text}
-                  </li>
-                );
-              })}
-            </ul>
-            <a href="#access" onClick={() => setSelectedPlan('yearly')} style={{ display: 'block', fontSize: 12, color: C.blue, textAlign: 'center', padding: '10px 0', borderTop: `1px solid ${C.line}`, textDecoration: 'none', fontWeight: 500 }}>Buy now</a>
-          </div>
+              ],
+            },
+          ].map(p => (
+            <div key={p.plan} className="rd-panel" style={{
+              border: `1px solid ${p.featured ? 'rgba(79,127,255,.6)' : 'rgba(148,170,220,.14)'}`,
+              borderRadius: 6,
+              background: p.featured ? 'linear-gradient(170deg,#0d1630,#0a1020)' : RD.panel,
+              padding: '32px 28px', display: 'flex', flexDirection: 'column', position: 'relative',
+            }}>
+              <RdCorners />
+              {p.featured && (
+                <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: RD.blue, color: '#fff', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.14em', padding: '5px 14px', borderRadius: 999 }}>MOST POPULAR</div>
+              )}
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.18em', color: p.labelColor, marginBottom: 16 }}>{p.label}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+                <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>{p.price}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>{p.period}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
+                <span style={{ fontSize: 13.5, color: '#8291ac' }}>{p.sub}</span>
+                {p.save && <span style={{ background: 'rgba(47,191,113,.14)', color: '#4fd48a', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, letterSpacing: '.05em', padding: '3px 9px', borderRadius: 999 }}>{p.save}</span>}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
+                {p.features.map((f, i) => {
+                  const obj = typeof f === 'object';
+                  const off = obj && f.off;
+                  const bold = obj && f.bold;
+                  const text = obj ? f.text : f;
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ color: off ? RD.inkFaint : RD.green, flexShrink: 0 }}>{off ? '—' : '✓'}</span>
+                      <span style={{ color: off ? RD.inkFaint : (p.featured || bold ? RD.ink : '#c6d2ea'), fontWeight: bold ? 600 : 400 }}>{text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
+              <a href="#access" onClick={() => setSelectedPlan(p.plan)} style={{
+                textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
+                background: p.featured ? RD.blue : 'transparent',
+                color: p.featured ? '#fff' : RD.blue,
+                border: p.featured ? 'none' : `1px solid rgba(79,127,255,.35)`,
+              }}>Buy now</a>
+            </div>
+          ))}
         </div>
 
-        <div style={{ marginTop: 32, textAlign: 'center' }}>
-          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: CTA_GRADIENT, boxShadow: '0 8px 22px rgba(47,95,224,0.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14.5, padding: '13px 30px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
-          <p style={{ marginTop: 12, fontSize: 12.5, color: C.inkFaint }}>
-            One trial, no plan chosen yet. You'll pick from the plans above only once your 30 days are up.
-          </p>
-        </div>
-
-        <p style={{ marginTop: 24, fontSize: 12.5, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
-          Discounts shown are versus the monthly rate (₹1,199/mo). Research (the book and video course) is included only with the yearly plan.
+        <p style={{ marginTop: 28, textAlign: 'center', fontSize: 12.5, color: RD.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
+          Every plan starts with a 30-day free trial — no card required. Discounts shown are versus the monthly rate.
         </p>
       </section>
+
+      {/* CTA BAND */}
+      <div style={{ borderTop: `1px solid ${RD.border}`, background: 'radial-gradient(700px 320px at 50% 0%, rgba(79,127,255,.14), transparent 70%)' }}>
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+          <h2 style={{ margin: '0 0 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(28px, 3.6vw, 42px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.15 }}>
+            Stop reading lagging lines.<br />Start drawing the structure.
+          </h2>
+          <p style={{ margin: '0 auto 30px', maxWidth: 440, fontSize: 16, color: RD.inkDim, lineHeight: 1.6 }}>
+            30 days free. Full <RdBrand>geometry</RdBrand> engine. No credit card.
+          </p>
+          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 16, padding: '15px 36px', borderRadius: 6, boxShadow: '0 10px 32px rgba(79,127,255,.4)', textDecoration: 'none' }}>Start Free Trial</a>
+        </div>
+      </div>
 
       {/* ACCESS / CTA */}
       <section id="access" style={{ borderTop: `1px solid ${C.line}`, background: C.bgPanel }}>
@@ -743,15 +980,20 @@ export default function GeometriyaLanding() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ borderTop: `1px solid ${C.line}` }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: C.inkFaint }}>GEOMETRIYA</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-            <a href="#provenance" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Provenance</a>
-            <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Admin</a>
-            <a href="/privacy" style={{ fontSize: 12, color: C.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
-            <span style={{ fontSize: 12, color: C.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>Geometric market analysis · India</span>
+      <footer style={{ borderTop: `1px solid ${RD.border}` }}>
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '36px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src="/logo.svg" alt="Geometriya" width="20" height="20" style={{ display: 'block' }} />
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: '.14em', color: RD.blue }}>GEOMETRIYA</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', fontSize: 14 }}>
+            <a href="#method" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Method</a>
+            <a href="#tools" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Tools</a>
+            <a href="#pricing" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Pricing</a>
+            <a href="/privacy" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Admin</a>
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#3d4a68' }}>© 2026 <RdBrand>Geometriya</RdBrand>. Markets are risk.</div>
         </div>
       </footer>
     </div>
