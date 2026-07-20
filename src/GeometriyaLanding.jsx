@@ -1012,7 +1012,7 @@ export default function GeometriyaLanding() {
             <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Admin</a>
             {/* TODO: point this at the real Razorpay Payment Page/Button link once the
                 payment-gateway side is set up — placeholder "#" for now. */}
-            <a href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: RD.blue, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: `1px solid rgba(79,127,255,.4)`, borderRadius: 999, padding: '6px 16px' }}>🙏 Support the Project</a>
+            <a href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: RD.blue, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: `1px solid rgba(79,127,255,.4)`, borderRadius: 999, padding: '6px 16px' }}>Support the Project 🙏</a>
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#3d4a68' }}>© 2026 <RdBrand>Geometriya</RdBrand>. Markets are risk.</div>
         </div>
