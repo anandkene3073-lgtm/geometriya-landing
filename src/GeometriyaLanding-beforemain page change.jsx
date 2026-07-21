@@ -831,8 +831,7 @@ export default function GeometriyaLanding() {
               Markets move in <RdBrand>geometry,</RdBrand><br />we just draw it.
             </h1>
             <p style={{ fontSize: 15.5, lineHeight: 1.55, color: RD.inkDim, maxWidth: 480, marginBottom: 24 }}>
-              Triangles, Gann boxes, auto angles, Squaring of Range &mdash; mapped by <RdBrand>Mitotic Scaling</RdBrand>, live on every chart.<br />
-              Every chart hides a geometry, <RdBrand>Geometriya</RdBrand> finds it.
+              Almost every charting platform gives you the same indicators. <RdBrand>Geometriya</RdBrand> is built end‑to‑end on <RdBrand>geometric</RdBrand> analysis &mdash; Gann angles, Vortex cycles, and our own Mitotic Scaling &mdash; the discipline the rest of the industry treats as a footnote.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
               <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
