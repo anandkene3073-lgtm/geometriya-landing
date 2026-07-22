@@ -490,7 +490,8 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [channel, setChannel] = useState('email'); // 'email' | 'sms' — email is primary for now
+  const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState(''); // re-type
   const [otp, setOtp] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | error
   const [errorMsg, setErrorMsg] = useState('');
@@ -541,9 +542,18 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!name || !phone) return;
-    if (channel === 'email' && !email) {
-      setErrorMsg('Please enter your email to receive the code.');
+    if (!name || !phone || !email || !password) {
+      setErrorMsg('Name, phone, email and password are all required.');
+      setStatus('error');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters.');
+      setStatus('error');
+      return;
+    }
+    if (password !== password2) {
+      setErrorMsg('Passwords do not match.');
       setStatus('error');
       return;
     }
@@ -553,18 +563,18 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, email: email || undefined, channel }),
+        body: JSON.stringify({ name, phone, email, password }),
       });
       const data = await res.json();
       if (res.status === 409) {
         if (selectedPlan) {
           // They're buying a plan, not asking for a fresh trial — an existing
-          // account is fine here, just send them a login OTP instead of
+          // account is fine here, just send them a login code instead of
           // dead-ending on "already registered".
           const loginRes = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, channel }),
+            body: JSON.stringify({ phone }),
           });
           const loginData = await loginRes.json();
           if (!loginRes.ok) throw new Error(loginData.error || 'Could not send OTP.');
@@ -669,7 +679,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       <div style={{ fontSize: 15, color: C.inkDim, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
         This number is already registered.{' '}
         <a href={APP_URL} style={{ color: C.gold, textDecoration: 'underline' }}>
-          Go to Geometriya and log in with your phone number
+          Go to Geometriya and sign in with your email or phone and password
         </a>
         {' '}instead — no need to sign up again.
       </div>
@@ -715,7 +725,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
           </div>
         )}
         <div style={{ width: '100%', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
-          Sent to {channel === 'email' ? email : phone}. Didn&rsquo;t get it?{' '}
+          Sent to your phone and email. Didn&rsquo;t get it?{' '}
           <span
             onClick={() => { setStep('details'); setOtp(''); setStatus('idle'); setErrorMsg(''); }}
             style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
@@ -748,35 +758,37 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       />
       <input
         type="email"
-        required={channel === 'email'}
-        placeholder={channel === 'email' ? 'Email (for your verification code)' : 'Email (optional)'}
+        required
+        placeholder="Email address"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         style={{ ...inputStyle, minWidth: 220 }}
       />
+      <input
+        type="password"
+        required
+        placeholder="Password (min 6 characters)"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ ...inputStyle, minWidth: 220 }}
+      />
+      <input
+        type="password"
+        required
+        placeholder="Re-type password"
+        value={password2}
+        onChange={(e) => setPassword2(e.target.value)}
+        style={{ ...inputStyle, minWidth: 220 }}
+      />
       <button
         type="submit"
-        disabled={status === 'loading' || phone.length !== 10 || (channel === 'email' && !email)}
-        style={buttonStyle(status === 'loading' || phone.length !== 10 || (channel === 'email' && !email))}
+        disabled={status === 'loading' || phone.length !== 10 || !name || !email || !password || !password2}
+        style={buttonStyle(status === 'loading' || phone.length !== 10 || !name || !email || !password || !password2)}
       >
         {status === 'loading' ? 'Sending…' : 'Get Early Access'}
       </button>
       <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
-        {channel === 'email' ? (
-          <>
-            We&rsquo;ll email your verification code.{' '}
-            <span onClick={() => { setChannel('sms'); setStatus('idle'); setErrorMsg(''); }} style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}>
-              Prefer SMS instead?
-            </span>
-          </>
-        ) : (
-          <>
-            We&rsquo;ll text your verification code (SMS delivery may occasionally be delayed).{' '}
-            <span onClick={() => { setChannel('email'); setStatus('idle'); setErrorMsg(''); }} style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}>
-              Use email instead
-            </span>
-          </>
-        )}
+        We&rsquo;ll send a verification code to your phone and email to confirm your account.
       </div>
       {status === 'error' && (
         <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
