@@ -819,6 +819,72 @@ function Nav() {
   );
 }
 
+function DonateButton() {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [custom, setCustom] = useState('');
+  const [error, setError] = useState('');
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onOutside = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  const donate = async (amountINR) => {
+    if (!amountINR || amountINR < 1) { setError('Enter an amount'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/donate/create-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountINR }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not start payment');
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      setOpen(false);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <a href="#" onClick={(e) => { e.preventDefault(); setOpen(v => !v); }}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: RD.blue, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: `1px solid rgba(79,127,255,.4)`, borderRadius: 999, padding: '6px 16px' }}>
+        Support the Project 🙏
+      </a>
+      {open && (
+        <div style={{ position: 'absolute', bottom: '120%', right: 0, zIndex: 30, width: 220, background: RD.panel, border: `1px solid ${RD.border}`, borderRadius: 8, padding: 14, boxShadow: '0 8px 28px rgba(0,0,0,.5)' }}>
+          <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Choose an amount</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            {[99, 299, 499].map(amt => (
+              <button key={amt} disabled={loading} onClick={() => donate(amt)}
+                style={{ flex: 1, fontSize: 12.5, fontWeight: 600, padding: '7px 0', borderRadius: 5, border: `1px solid ${RD.border}`, background: 'transparent', color: RD.ink, cursor: loading ? 'default' : 'pointer' }}>
+                ₹{amt}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input type="number" min="1" placeholder="Custom ₹" value={custom} onChange={e => setCustom(e.target.value)}
+              style={{ flex: 1, minWidth: 0, fontSize: 12.5, padding: '7px 8px', borderRadius: 5, border: `1px solid ${RD.border}`, background: 'transparent', color: RD.ink, outline: 'none' }} />
+            <button disabled={loading} onClick={() => donate(parseInt(custom, 10))}
+              style={{ fontSize: 12.5, fontWeight: 600, padding: '7px 12px', borderRadius: 5, border: 'none', background: RD.blue, color: '#fff', cursor: loading ? 'default' : 'pointer' }}>
+              {loading ? '…' : 'Go'}
+            </button>
+          </div>
+          {error && <div style={{ fontSize: 11, color: RD.red, marginTop: 8 }}>{error}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GeometriyaLanding() {
   const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'halfyearly' | 'yearly' — set when someone clicks "Buy now, skip trial"
   return (
@@ -1025,9 +1091,7 @@ export default function GeometriyaLanding() {
             <a href="https://wa.me/919730224399" target="_blank" rel="noopener noreferrer" style={{ color: RD.inkFaint, textDecoration: 'none' }}>WhatsApp</a>
             <a href="/privacy" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
             <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Admin</a>
-            {/* TODO: point this at the real Razorpay Payment Page/Button link once the
-                payment-gateway side is set up — placeholder "#" for now. */}
-            <a href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: RD.blue, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: `1px solid rgba(79,127,255,.4)`, borderRadius: 999, padding: '6px 16px' }}>Support the Project 🙏</a>
+            <DonateButton />
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#3d4a68' }}>© 2026 <RdBrand>Geometriya</RdBrand>. Markets are risk.</div>
         </div>
