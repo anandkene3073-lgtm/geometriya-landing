@@ -799,7 +799,111 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   );
 }
 
+function SubscriptionCheckModal({ open, onClose }) {
+  const [step, setStep] = useState('phone'); // phone | otp | result
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [status, setStatus] = useState(null);
+  const [devOtpHint, setDevOtpHint] = useState('');
+
+  if (!open) return null;
+
+  const reset = () => { setStep('phone'); setPhone(''); setOtp(''); setError(''); setStatus(null); setDevOtpHint(''); onClose(); };
+
+  const sendOtp = async () => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10) { setError('Enter a valid 10-digit mobile number'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/subscription-check/send-otp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: digits }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not send code');
+      setDevOtpHint(data.devMode ? '(dev mode — check server console for the code)' : '');
+      setStep('otp');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otp.trim()) { setError('Enter the code'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/subscription-check/verify`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.replace(/\D/g, ''), otp: otp.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      setStatus(data);
+      setStep('result');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputStyle = { width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '9px 10px', borderRadius: 6, border: `1px solid ${RD.border}`, background: 'transparent', color: RD.ink, outline: 'none' };
+  const btnStyle = { width: '100%', marginTop: 10, fontSize: 13, fontWeight: 600, padding: '9px 0', borderRadius: 6, border: 'none', background: RD.blue, color: '#fff', cursor: loading ? 'default' : 'pointer' };
+
+  return (
+    <div onClick={reset} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: 340, maxWidth: '90vw', background: RD.panel, border: `1px solid ${RD.border}`, borderRadius: 10, padding: 20 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: RD.blue, marginBottom: 14 }}>Check my subscription</div>
+
+        {step === 'phone' && (
+          <>
+            <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Enter your registered mobile number — we'll text/email you a one-time code.</div>
+            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="10-digit mobile number" style={inputStyle} />
+            <button disabled={loading} onClick={sendOtp} style={btnStyle}>{loading ? 'Sending…' : 'Send code'}</button>
+          </>
+        )}
+
+        {step === 'otp' && (
+          <>
+            <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Enter the code sent to your phone/email. {devOtpHint}</div>
+            <input value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit code" style={inputStyle} />
+            <button disabled={loading} onClick={verifyOtp} style={btnStyle}>{loading ? 'Verifying…' : 'Verify'}</button>
+          </>
+        )}
+
+        {step === 'result' && status && (
+          <div style={{ fontSize: 13 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ color: RD.inkDim }}>Plan</span>
+              <b style={{ color: RD.blue, textTransform: 'capitalize' }}>
+                {status.hasActiveSub ? (status.plan || 'active') : status.trialExpired ? 'Trial expired' : 'Free trial'}
+              </b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: RD.inkDim }}>{status.hasActiveSub ? 'Renews / expires' : 'Trial ends'}</span>
+              <b>
+                {(() => {
+                  const d = status.hasActiveSub ? status.subscription_end_date : status.trial_end_date;
+                  return d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                })()}
+              </b>
+            </div>
+          </div>
+        )}
+
+        {error && <div style={{ fontSize: 11.5, color: RD.red, marginTop: 10 }}>{error}</div>}
+        <button onClick={reset} style={{ width: '100%', marginTop: 12, fontSize: 12, padding: '6px 0', borderRadius: 6, border: `1px solid ${RD.border}`, background: 'transparent', color: RD.inkDim, cursor: 'pointer' }}>Close</button>
+      </div>
+    </div>
+  );
+}
+
 function Nav() {
+  const [showSubCheck, setShowSubCheck] = useState(false);
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(6,10,20,0.85)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${C.line}` }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -811,10 +915,12 @@ function Nav() {
           {['Method', 'Tools', 'Pricing'].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>{l}</a>
           ))}
+          <a href="#" onClick={e => { e.preventDefault(); setShowSubCheck(true); }} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>My Plan</a>
           <a href={APP_URL} style={{ color: RD.ink, textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Login</a>
           <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
         </div>
       </div>
+      <SubscriptionCheckModal open={showSubCheck} onClose={() => setShowSubCheck(false)} />
     </div>
   );
 }
