@@ -1021,6 +1021,8 @@ export default function GeometriyaLanding() {
             <a href="#method" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Method</a>
             <a href="#tools" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Tools</a>
             <a href="#pricing" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Pricing</a>
+            <a href="mailto:geometriya.analysis@gmail.com?subject=Geometriya%20Support" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Email</a>
+            <a href="https://wa.me/919730224399" target="_blank" rel="noopener noreferrer" style={{ color: RD.inkFaint, textDecoration: 'none' }}>WhatsApp</a>
             <a href="/privacy" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
             <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Admin</a>
             {/* TODO: point this at the real Razorpay Payment Page/Button link once the
