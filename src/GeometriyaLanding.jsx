@@ -860,12 +860,12 @@ function DonateButton() {
         Support the Project 🙏
       </a>
       {open && (
-        <div style={{ position: 'absolute', bottom: '120%', right: 0, zIndex: 30, width: 220, background: RD.panel, border: `1px solid ${RD.border}`, borderRadius: 8, padding: 14, boxShadow: '0 8px 28px rgba(0,0,0,.5)' }}>
+        <div style={{ position: 'absolute', bottom: '120%', right: 0, zIndex: 30, width: 250, background: RD.panel, border: `1px solid ${RD.border}`, borderRadius: 8, padding: 14, boxShadow: '0 8px 28px rgba(0,0,0,.5)' }}>
           <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Choose an amount</div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-            {[99, 299, 499].map(amt => (
+            {[1001, 2001, 3001].map(amt => (
               <button key={amt} disabled={loading} onClick={() => donate(amt)}
-                style={{ flex: 1, fontSize: 12.5, fontWeight: 600, padding: '7px 0', borderRadius: 5, border: `1px solid ${RD.border}`, background: 'transparent', color: RD.ink, cursor: loading ? 'default' : 'pointer' }}>
+                style={{ flex: 1, fontSize: 12, fontWeight: 600, padding: '7px 0', borderRadius: 5, border: `1px solid ${RD.border}`, background: 'transparent', color: RD.ink, cursor: loading ? 'default' : 'pointer' }}>
                 ₹{amt}
               </button>
             ))}
