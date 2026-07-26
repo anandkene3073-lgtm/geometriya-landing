@@ -993,6 +993,11 @@ function DonateButton() {
 
 export default function GeometriyaLanding() {
   const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'halfyearly' | 'yearly' — set when someone clicks "Buy now, skip trial"
+  const [billingCycle, setBillingCycle] = useState('monthly'); // Full Access price-preview toggle only — doesn't skip the trial
+  const [planPrices, setPlanPrices] = useState({ monthlyINR: null, halfyearlyINR: null, yearlyINR: null });
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/payment/plan-info`).then(r => r.json()).then(setPlanPrices).catch(() => {});
+  }, []);
   return (
     <div style={{ background: PAGE_BG, color: RD.ink, minHeight: '100vh', fontFamily: "'Space Grotesk', sans-serif" }}>
       <style>{FONTS}{HERO_MONITOR_CSS}{RD_PANEL_CSS}{`
@@ -1010,7 +1015,7 @@ export default function GeometriyaLanding() {
       <section style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px 40px' }}>
         <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 56, alignItems: 'center' }}>
           <div>
-            <div style={{ display: 'inline-block', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#7ea2ff', border: '1px solid rgba(126,162,255,.35)', borderRadius: 999, padding: '6px 16px' }}>NOT AN INDICATOR PLATFORM</div>
+            <div style={{ display: 'inline-block', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#7ea2ff', border: '1px solid rgba(126,162,255,.35)', borderRadius: 999, padding: '6px 16px' }}>POWERED BY MITOTIC SCALING</div>
             <h1 style={{ fontSize: 'clamp(34px, 4.4vw, 48px)', fontWeight: 700, lineHeight: 1.08, margin: '18px 0 18px', letterSpacing: '-.02em' }}>
               Markets move in <RdBrand>geometry,</RdBrand><br />we just draw it.
             </h1>
@@ -1018,13 +1023,19 @@ export default function GeometriyaLanding() {
               Triangles, Gann boxes, auto angles, Squaring of Range &mdash; mapped by <RdBrand>Mitotic Scaling</RdBrand>, live on every chart.<br />
               Every chart hides a geometry, <RdBrand>Geometriya</RdBrand> finds it.
             </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 18 }}>
               <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
               <a href="#tools" style={{ border: '1px solid rgba(148,170,220,.3)', color: RD.ink, fontWeight: 500, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>See the tools →</a>
             </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'rgba(47,191,113,.12)', border: '1px solid rgba(47,191,113,.4)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, maxWidth: 480 }}>
+              <span style={{ color: RD.green, fontSize: 17, flexShrink: 0 }}>✓</span>
+              <span style={{ fontSize: 13.5, lineHeight: 1.5, color: RD.ink, fontWeight: 600 }}>
+                Free forever after your trial — 20 hand-picked stocks + NIFTY&nbsp;50 &amp; BANKNIFTY, no expiry, no catch.
+              </span>
+            </div>
             <div style={{ display: 'flex', gap: 24, fontSize: 14.5, color: RD.inkDim, fontFamily: "'IBM Plex Mono', monospace", flexWrap: 'wrap' }}>
               <span>✓ 30-day free trial</span>
-              <span>✓ No credit card required</span>
+              <span>✓ Just your mobile number to start</span>
             </div>
           </div>
           <HeroMonitor />
@@ -1065,94 +1076,139 @@ export default function GeometriyaLanding() {
       <section id="pricing" style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 24px 110px' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 18 }}>PRICING</div>
-          <h2 style={{ margin: 0, fontSize: 'clamp(28px, 3.6vw, 44px)', fontWeight: 700, letterSpacing: '-.015em' }}>
-            Pay for <RdBrand>geometry</RdBrand>, not bloat.
+          <h2 style={{ margin: '0 0 12px', fontSize: 'clamp(28px, 3.6vw, 44px)', fontWeight: 700, letterSpacing: '-.015em' }}>
+            Simple pricing. Start free, forever.
           </h2>
+          <p style={{ margin: 0, fontSize: 15.5, color: RD.inkDim }}>
+            No hidden charges. No surprise renewals. Upgrade only when you're ready.
+          </p>
         </div>
 
-        <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22, alignItems: 'stretch' }}>
+        {(() => {
+          const CYCLES = {
+            monthly:    { short: 'Monthly', period: '/ month',    key: 'monthlyINR',    months: 1 },
+            halfyearly: { short: '6-Month', period: '/ 6 months', key: 'halfyearlyINR', months: 6 },
+            yearly:     { short: 'Yearly',  period: '/ year',     key: 'yearlyINR',     months: 12 },
+          };
+          const cyc = CYCLES[billingCycle];
+          const price = planPrices[cyc.key];
+          const perMonth = price ? Math.round(price / cyc.months) : null;
+          const save = (billingCycle !== 'monthly' && planPrices.monthlyINR && price)
+            ? Math.round((1 - price / (planPrices.monthlyINR * cyc.months)) * 100)
+            : null;
 
-          {[
-            {
-              plan: 'monthly', label: 'MONTHLY', labelColor: RD.inkDim, price: '₹1,199', period: '/ month',
-              sub: 'Billed monthly, cancel any time', save: null, featured: false,
-              features: [
-                'Full Geometriya charting workspace',
-                'Gann, Fibonacci, Vortex & geometric overlay tools',
-                'Mitotic Scaling on every timeframe',
-                'Dream 45 scanner across your watchlist',
-                { text: 'Research (book + video course)', off: true },
-              ],
-            },
-            {
-              plan: 'halfyearly', label: '6 MONTHS', labelColor: RD.blue, price: '₹6,299', period: '/ 6 months',
-              sub: '≈₹1,050/month', save: 'Save 12%', featured: true,
-              features: [
-                'Full Geometriya charting workspace',
-                'Gann, Fibonacci, Vortex & geometric overlay tools',
-                'Mitotic Scaling on every timeframe',
-                'Dream 45 scanner across your watchlist',
-                { text: 'Research (book + video course)', off: true },
-              ],
-            },
-            {
-              plan: 'yearly', label: 'YEARLY', labelColor: RD.cyan, price: '₹9,999', period: '/ year',
-              sub: '≈₹833/month', save: 'Save 30%', featured: false,
-              features: [
-                'Everything in the other plans',
-                'Full Geometriya charting workspace, all year',
-                { text: 'Research: the full book', bold: true },
-                { text: 'Research: 15-part video course', bold: true },
-              ],
-            },
-          ].map(p => (
-            <div key={p.plan} className="rd-panel" style={{
-              border: `1px solid ${p.featured ? 'rgba(79,127,255,.6)' : 'rgba(148,170,220,.14)'}`,
-              borderRadius: 6,
-              background: p.featured ? 'linear-gradient(170deg,#0d1630,#0a1020)' : RD.panel,
-              padding: '32px 28px', display: 'flex', flexDirection: 'column', position: 'relative',
-            }}>
-              <RdCorners />
-              {p.featured && (
-                <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: RD.blue, color: '#fff', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.14em', padding: '5px 14px', borderRadius: 999 }}>MOST POPULAR</div>
-              )}
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.18em', color: p.labelColor, marginBottom: 16 }}>{p.label}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
-                <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>{p.price}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>{p.period}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
-                <span style={{ fontSize: 13.5, color: '#8291ac' }}>{p.sub}</span>
-                {p.save && <span style={{ background: 'rgba(47,191,113,.14)', color: '#4fd48a', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, letterSpacing: '.05em', padding: '3px 9px', borderRadius: 999 }}>{p.save}</span>}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
-                {p.features.map((f, i) => {
-                  const obj = typeof f === 'object';
-                  const off = obj && f.off;
-                  const bold = obj && f.bold;
-                  const text = obj ? f.text : f;
-                  return (
+          return (
+            <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 22, alignItems: 'stretch' }}>
+
+              {/* STARTER — free forever */}
+              <div className="rd-panel" style={{ border: '1px solid rgba(47,191,113,.5)', borderRadius: 6, background: RD.panel, padding: '32px 28px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <RdCorners />
+                <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: RD.green, color: '#06170f', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.1em', fontWeight: 700, padding: '5px 14px', borderRadius: 999, whiteSpace: 'nowrap' }}>FREE FOREVER — NO CARD, EVER</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.18em', color: RD.inkDim, marginBottom: 16 }}>STARTER</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>Free</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>forever</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
+                  <span style={{ fontSize: 13.5, color: '#8291ac' }}>Just your mobile number to start</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
+                  {[
+                    '20 hand-picked large-cap stocks + NIFTY 50 & BANKNIFTY',
+                    'Full Geometriya charting workspace',
+                    'Gann, Fibonacci, Vortex & geometric overlay tools',
+                    'Mitotic Scaling on every timeframe',
+                  ].map((t, i) => (
                     <div key={i} style={{ display: 'flex', gap: 10 }}>
-                      <span style={{ color: off ? RD.inkFaint : RD.green, flexShrink: 0 }}>{off ? '—' : '✓'}</span>
-                      <span style={{ color: off ? RD.inkFaint : (p.featured || bold ? RD.ink : '#c6d2ea'), fontWeight: bold ? 600 : 400 }}>{text}</span>
+                      <span style={{ color: RD.green, flexShrink: 0 }}>✓</span>
+                      <span style={{ color: '#c6d2ea' }}>{t}</span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+                <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
+                <a href="#access" onClick={() => setSelectedPlan(null)} style={{
+                  textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
+                  background: 'transparent', color: RD.blue, border: `1px solid rgba(79,127,255,.35)`,
+                }}>Start Free</a>
               </div>
-              <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
-              <a href="#access" onClick={() => setSelectedPlan(p.plan)} style={{
-                textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
-                background: p.featured ? RD.blue : 'transparent',
-                color: p.featured ? '#fff' : RD.blue,
-                border: p.featured ? 'none' : `1px solid rgba(79,127,255,.35)`,
-              }}>Buy now</a>
+
+              {/* FULL ACCESS — unlimited scrips, billing-cycle preview */}
+              <div className="rd-panel" style={{ border: '1px solid rgba(79,127,255,.6)', borderRadius: 6, background: 'linear-gradient(170deg,#0d1630,#0a1020)', padding: '32px 28px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <RdCorners />
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.18em', color: RD.blue, marginBottom: 16 }}>FULL ACCESS</div>
+
+                <div style={{ display: 'flex', gap: 4, marginBottom: 18, background: '#0c1526', border: `1px solid ${RD.border}`, borderRadius: 8, padding: 4 }}>
+                  {Object.entries(CYCLES).map(([key, c]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setBillingCycle(key)}
+                      style={{
+                        flex: 1, padding: '7px 4px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                        background: billingCycle === key ? RD.blue : 'transparent',
+                        color: billingCycle === key ? '#fff' : RD.inkDim,
+                        fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: '.04em', fontWeight: 600,
+                      }}
+                    >{c.short}</button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>{price ? `₹${price.toLocaleString('en-IN')}` : '…'}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>{cyc.period}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
+                  {perMonth != null && billingCycle !== 'monthly' && (
+                    <span style={{ fontSize: 13.5, color: '#8291ac' }}>≈₹{perMonth.toLocaleString('en-IN')}/month</span>
+                  )}
+                  {save > 0 && (
+                    <span style={{ background: 'rgba(47,191,113,.14)', color: '#4fd48a', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, letterSpacing: '.05em', padding: '3px 9px', borderRadius: 999 }}>Save {save}%</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
+                  {[
+                    'Unlimited NSE scrips',
+                    'Same tools as Starter — full geometry workspace',
+                    'Gann, Fibonacci, Vortex & geometric overlay tools',
+                    'Mitotic Scaling on every timeframe',
+                    'Dream 45 scanner across your watchlist',
+                  ].map((t, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ color: RD.green, flexShrink: 0 }}>✓</span>
+                      <span style={{ color: RD.ink }}>{t}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
+                <a href="#access" onClick={() => setSelectedPlan(null)} style={{
+                  textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
+                  background: RD.blue, color: '#fff', border: 'none',
+                }}>Start Free Trial</a>
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         <p style={{ marginTop: 28, textAlign: 'center', fontSize: 12.5, color: RD.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
-          Every plan starts with a 30-day free trial — no card required.
+          Every plan starts with a 30-day free trial — just your mobile number, nothing to pay upfront.
         </p>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px 110px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 18 }}>FAQ</div>
+        </div>
+        <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '28px 30px' }}>
+          <RdCorners />
+          <div style={{ fontSize: 16.5, fontWeight: 600, color: RD.ink, marginBottom: 12 }}>
+            What happens when my 30-day free trial ends?
+          </div>
+          <div style={{ fontSize: 14.5, lineHeight: 1.7, color: RD.inkDim }}>
+            You&rsquo;re automatically moved to our Starter plan — no action needed, nothing lost. You keep full access to all geometry tools and Mitotic Scaling on 20 hand-picked large-cap stocks (plus NIFTY&nbsp;50 &amp; BANKNIFTY), for as long as you like. Upgrade to Full Access anytime for unlimited scrips.
+          </div>
+        </div>
       </section>
 
       {/* CTA BAND */}
@@ -1162,7 +1218,7 @@ export default function GeometriyaLanding() {
             Stop reading lagging lines.<br />Start drawing the structure.
           </h2>
           <p style={{ margin: '0 auto 30px', maxWidth: 440, fontSize: 16, color: RD.inkDim, lineHeight: 1.6 }}>
-            30 days free. Full <RdBrand>geometry</RdBrand> engine. No credit card.
+            30 days free, then free forever on 20 stocks. Full <RdBrand>geometry</RdBrand> engine, no card needed.
           </p>
           <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 16, padding: '15px 36px', borderRadius: 6, boxShadow: '0 10px 32px rgba(79,127,255,.4)', textDecoration: 'none' }}>Start Free Trial</a>
         </div>
@@ -1176,7 +1232,7 @@ export default function GeometriyaLanding() {
             We&rsquo;re refining the full workspace before opening it up. Sign up with your mobile number and we&rsquo;ll verify you instantly &mdash; your 30-day trial starts as soon as we approve your access.
           </p>
           <p style={{ color: C.gold, fontSize: 13.5, fontWeight: 600, marginBottom: 28 }}>
-            30-day free trial &middot; No credit card required
+            30-day free trial &middot; Free forever after &middot; Just your mobile number
           </p>
           <SignupForm selectedPlan={selectedPlan} clearSelectedPlan={() => setSelectedPlan(null)} />
         </div>
@@ -1193,6 +1249,7 @@ export default function GeometriyaLanding() {
             <a href="#method" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Method</a>
             <a href="#tools" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Tools</a>
             <a href="#pricing" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Pricing</a>
+            <a href="#faq" style={{ color: RD.inkFaint, textDecoration: 'none' }}>FAQ</a>
             <a href="mailto:geometriya.analysis@gmail.com?subject=Geometriya%20Support" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Email</a>
             <a href="https://wa.me/919730224399" target="_blank" rel="noopener noreferrer" style={{ color: RD.inkFaint, textDecoration: 'none' }}>WhatsApp</a>
             <a href="/privacy" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
