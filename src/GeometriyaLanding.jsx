@@ -481,6 +481,21 @@ const TOOL_GROUPS = [
 // ── Backend API base URL ──
 // Live backend, deployed on Render.
 const API_BASE_URL = 'https://geometriya-backend-render.onrender.com';
+
+// Prices are region-dependent (₹ in India, $ elsewhere). The backend decides
+// which to SHOW from the browser's IANA timezone; the currency a user is
+// actually charged is re-derived server-side from their phone at checkout, so
+// nothing here is worth spoofing.
+const planInfoUrl = () => {
+  let tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* older browsers */ }
+  return `${API_BASE_URL}/api/payment/plan-info?tz=${encodeURIComponent(tz)}`;
+};
+
+const PLAN_DEFAULTS = { currency: 'INR', symbol: '₹', monthly: null, yearly: null };
+
+const fmtPrice = (p, amount) =>
+  amount == null ? '…' : `${p.symbol || '₹'}${amount.toLocaleString(p.currency === 'USD' ? 'en-US' : 'en-IN')}`;
 // Where the trading app itself lives. Change this if you deploy it to a
 // different subdomain or path.
 const APP_URL = 'https://app.geometricalanalysis.com';
@@ -495,16 +510,15 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [otp, setOtp] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | error
   const [errorMsg, setErrorMsg] = useState('');
-  const [planPrices, setPlanPrices] = useState({ monthlyINR: null, halfyearlyINR: null, yearlyINR: null });
+  const [planPrices, setPlanPrices] = useState(PLAN_DEFAULTS);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/payment/plan-info`).then(r => r.json()).then(setPlanPrices).catch(() => {});
+    fetch(planInfoUrl()).then(r => r.json()).then(setPlanPrices).catch(() => {});
   }, []);
 
   const PLAN_LABELS = {
-    monthly: () => `Monthly — ₹${planPrices.monthlyINR?.toLocaleString('en-IN') ?? '…'}`,
-    halfyearly: () => `6 Months — ₹${planPrices.halfyearlyINR?.toLocaleString('en-IN') ?? '…'}`,
-    yearly: () => `Yearly — ₹${planPrices.yearlyINR?.toLocaleString('en-IN') ?? '…'}`,
+    monthly: () => `Monthly — ${fmtPrice(planPrices, planPrices.monthly)}`,
+    yearly: () => `Yearly — ${fmtPrice(planPrices, planPrices.yearly)}`,
   };
 
   const loadRazorpayScript = () => new Promise((resolve) => {
@@ -690,13 +704,16 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
     return (
       <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
         {selectedPlan
-          ? `✓ Payment confirmed — your ${selectedPlan === 'yearly' ? 'yearly' : selectedPlan === 'halfyearly' ? '6-month' : 'monthly'} plan is active. Taking you to Geometriya now…`
+          ? `✓ Payment confirmed — your ${selectedPlan === 'yearly' ? 'yearly' : 'monthly'} plan is active. Taking you to Geometriya now…`
           : '✓ Verified — your 30-day trial is active. Taking you to Geometriya now…'}
       </div>
     );
   }
 
-  const planBanner = selectedPlan && (
+  // PLAN_LABELS no longer has a 'halfyearly' entry — guard so a stale link or
+  // restored session carrying the retired plan renders nothing rather than
+  // throwing on an undefined call.
+  const planBanner = selectedPlan && PLAN_LABELS[selectedPlan] && (
     <div style={{ width: '100%', marginBottom: 4, fontSize: 13, color: C.ink, background: C.bgPanel, border: `1px solid ${C.gold}`, borderRadius: 4, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <span>Buying: <strong>{PLAN_LABELS[selectedPlan]()}</strong> — skipping the free trial</span>
       <span onClick={clearSelectedPlan} style={{ color: C.inkFaint, cursor: 'pointer', textDecoration: 'underline', flexShrink: 0, fontSize: 12 }}>Use free trial instead</span>
@@ -992,11 +1009,11 @@ function DonateButton() {
 }
 
 export default function GeometriyaLanding() {
-  const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'halfyearly' | 'yearly' — set when someone clicks "Buy now, skip trial"
+  const [selectedPlan, setSelectedPlan] = useState(null); // null | 'monthly' | 'yearly' — set when someone clicks "Buy now, skip trial"
   const [billingCycle, setBillingCycle] = useState('monthly'); // Full Access price-preview toggle only — doesn't skip the trial
-  const [planPrices, setPlanPrices] = useState({ monthlyINR: null, halfyearlyINR: null, yearlyINR: null });
+  const [planPrices, setPlanPrices] = useState(PLAN_DEFAULTS);
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/payment/plan-info`).then(r => r.json()).then(setPlanPrices).catch(() => {});
+    fetch(planInfoUrl()).then(r => r.json()).then(setPlanPrices).catch(() => {});
   }, []);
   return (
     <div style={{ background: PAGE_BG, color: RD.ink, minHeight: '100vh', fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -1086,15 +1103,14 @@ export default function GeometriyaLanding() {
 
         {(() => {
           const CYCLES = {
-            monthly:    { short: 'Monthly', period: '/ month',    key: 'monthlyINR',    months: 1 },
-            halfyearly: { short: '6-Month', period: '/ 6 months', key: 'halfyearlyINR', months: 6 },
-            yearly:     { short: 'Yearly',  period: '/ year',     key: 'yearlyINR',     months: 12 },
+            monthly: { short: 'Monthly', period: '/ month', key: 'monthly', months: 1 },
+            yearly:  { short: 'Yearly',  period: '/ year',  key: 'yearly',  months: 12 },
           };
-          const cyc = CYCLES[billingCycle];
+          const cyc = CYCLES[billingCycle] || CYCLES.monthly;
           const price = planPrices[cyc.key];
           const perMonth = price ? Math.round(price / cyc.months) : null;
-          const save = (billingCycle !== 'monthly' && planPrices.monthlyINR && price)
-            ? Math.round((1 - price / (planPrices.monthlyINR * cyc.months)) * 100)
+          const save = (billingCycle !== 'monthly' && planPrices.monthly && price)
+            ? Math.round((1 - price / (planPrices.monthly * cyc.months)) * 100)
             : null;
 
           return (
@@ -1154,12 +1170,12 @@ export default function GeometriyaLanding() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
-                  <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>{price ? `₹${price.toLocaleString('en-IN')}` : '…'}</span>
+                  <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>{fmtPrice(planPrices, price)}</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>{cyc.period}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
                   {perMonth != null && billingCycle !== 'monthly' && (
-                    <span style={{ fontSize: 13.5, color: '#8291ac' }}>≈₹{perMonth.toLocaleString('en-IN')}/month</span>
+                    <span style={{ fontSize: 13.5, color: '#8291ac' }}>≈{fmtPrice(planPrices, perMonth)}/month</span>
                   )}
                   {save > 0 && (
                     <span style={{ background: 'rgba(47,191,113,.14)', color: '#4fd48a', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, letterSpacing: '.05em', padding: '3px 9px', borderRadius: 999 }}>Save {save}%</span>
@@ -1168,7 +1184,9 @@ export default function GeometriyaLanding() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
                   {[
-                    'Unlimited NSE scrips',
+                    planPrices.currency === 'USD'
+                      ? 'Unlimited scrips — NSE, US, FX & JSE'
+                      : 'Unlimited NSE scrips',
                     'Same tools as Starter — full geometry workspace',
                     'Gann, Fibonacci, Vortex & geometric overlay tools',
                     'Mitotic Scaling on every timeframe',
@@ -1179,6 +1197,20 @@ export default function GeometriyaLanding() {
                       <span style={{ color: RD.ink }}>{t}</span>
                     </div>
                   ))}
+
+                  {/* Say plainly what the data is before anyone pays. Indian
+                      users can wire up live intraday through their own broker
+                      account; outside India that connection doesn't exist yet,
+                      so those charts are end-of-day — which is exactly why the
+                      international price sits where it does. */}
+                  {planPrices.currency === 'USD' && (
+                    <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
+                      <span style={{ color: RD.inkFaint, flexShrink: 0 }}>ⓘ</span>
+                      <span style={{ color: RD.inkFaint, fontSize: 13 }}>
+                        Charts outside India use <b style={{ color: RD.inkDim, fontWeight: 600 }}>end-of-day data</b>. Live intraday through your own broker account is available for NSE today — US, FX and JSE broker connections are on the way.
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
                 <a href="#access" onClick={() => setSelectedPlan(null)} style={{
