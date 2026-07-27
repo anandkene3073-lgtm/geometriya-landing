@@ -917,7 +917,7 @@ function Nav() {
           ))}
           <a href="#" onClick={e => { e.preventDefault(); setShowSubCheck(true); }} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>My Plan</a>
           <a href={APP_URL} style={{ color: RD.ink, textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Login</a>
-          <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
+          <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none' }}>Try It Free</a>
         </div>
       </div>
       <SubscriptionCheckModal open={showSubCheck} onClose={() => setShowSubCheck(false)} />
@@ -1024,7 +1024,7 @@ export default function GeometriyaLanding() {
               Every chart hides a geometry, <RdBrand>Geometriya</RdBrand> finds it.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 18 }}>
-              <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Start Free Trial</a>
+              <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Try It Free</a>
               <a href="#tools" style={{ border: '1px solid rgba(148,170,220,.3)', color: RD.ink, fontWeight: 500, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>See the tools →</a>
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'rgba(47,191,113,.12)', border: '1px solid rgba(47,191,113,.4)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, maxWidth: 480 }}>
@@ -1184,7 +1184,7 @@ export default function GeometriyaLanding() {
                 <a href="#access" onClick={() => setSelectedPlan(null)} style={{
                   textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
                   background: RD.blue, color: '#fff', border: 'none',
-                }}>Start Free Trial</a>
+                }}>Try It Free</a>
               </div>
             </div>
           );
@@ -1220,7 +1220,7 @@ export default function GeometriyaLanding() {
           <p style={{ margin: '0 auto 30px', maxWidth: 440, fontSize: 16, color: RD.inkDim, lineHeight: 1.6 }}>
             30 days free, then free forever on 20 stocks. Full <RdBrand>geometry</RdBrand> engine, no card needed.
           </p>
-          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 16, padding: '15px 36px', borderRadius: 6, boxShadow: '0 10px 32px rgba(79,127,255,.4)', textDecoration: 'none' }}>Start Free Trial</a>
+          <a href="#access" onClick={() => setSelectedPlan(null)} style={{ display: 'inline-block', background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 16, padding: '15px 36px', borderRadius: 6, boxShadow: '0 10px 32px rgba(79,127,255,.4)', textDecoration: 'none' }}>Try It Free</a>
         </div>
       </div>
 
