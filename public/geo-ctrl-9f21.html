@@ -905,7 +905,7 @@
       const ka = sortKey(a, sortCol), kb = sortKey(b, sortCol);
       // Always push missing values to the bottom, independent of direction.
       if (missing(ka) && !missing(kb)) return 1;
-      if (!missing(kb) && missing(ka)) return -1;
+      if (missing(kb) && !missing(ka)) return -1;
       if (ka < kb) return sortDir === 'asc' ? -1 : 1;
       if (ka > kb) return sortDir === 'asc' ? 1 : -1;
       return 0;
@@ -917,8 +917,9 @@
       sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     } else {
       sortCol = col;
-      // Trial/last-active read naturally soonest/most-recent first; others A→Z.
-      sortDir = (col === 'trial' || col === 'active' || col === 'logins') ? 'asc' : 'asc';
+      // Trial reads soonest-expiring first (ascending); last-active and logins
+      // read most-recent / most-frequent first, which is descending.
+      sortDir = (col === 'active' || col === 'logins') ? 'desc' : 'asc';
     }
     renderTable();
   }
