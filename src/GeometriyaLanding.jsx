@@ -919,10 +919,59 @@ function SubscriptionCheckModal({ open, onClose }) {
   );
 }
 
+// ── Mobile-only "get the app" strip. The charts live on their own origin
+// (app.geometricalanalysis.com) and that's where the PWA manifest + service
+// worker are, so this bar can't trigger an install itself — installing from
+// here would only ever put THIS marketing page on someone's home screen.
+// It hands off to the app instead, with ?install=1 so the app surfaces its
+// install prompt straight away rather than waiting behind the login form.
+// Dismissal sticks for a week so it asks once, not on every visit.
+const INSTALL_DISMISS_KEY = 'geo_siteInstallDismissedAt';
+const INSTALL_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+
+function InstallAppStrip() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    // Already opened as an installed app? Then there's nothing to advertise.
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    if (standalone) return;
+    let dismissedAt = 0;
+    try { dismissedAt = Number(localStorage.getItem(INSTALL_DISMISS_KEY)) || 0; } catch { /* private mode */ }
+    if (Date.now() - dismissedAt < INSTALL_COOLDOWN_MS) return;
+    setShow(true);
+  }, []);
+  const dismiss = () => {
+    setShow(false);
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch { /* private mode */ }
+  };
+  if (!show) return null;
+  return (
+    <div className="geo-install-strip">
+      <img src="/logo.svg" alt="" width="30" height="30" style={{ flexShrink: 0, borderRadius: 7 }} />
+      {/* Truncates rather than wrapping — on a 320px screen the subtitle would
+          otherwise push the strip to three lines and eat the viewport. */}
+      <div style={{ flex: 1, minWidth: 0, lineHeight: 1.3, whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: RD.ink, overflow: 'hidden', textOverflow: 'ellipsis' }}>Get the Geometriya app</div>
+        <div style={{ fontSize: 11.5, color: RD.inkDim, overflow: 'hidden', textOverflow: 'ellipsis' }}>Charts on your home screen — free</div>
+      </div>
+      <a href={`${APP_URL}/?install=1`}
+        style={{ flexShrink: 0, background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 13, padding: '8px 16px', borderRadius: 6, textDecoration: 'none' }}>
+        Install
+      </a>
+      <button onClick={dismiss} aria-label="Dismiss"
+        style={{ flexShrink: 0, background: 'transparent', border: 'none', color: RD.inkDim, fontSize: 18, lineHeight: 1, padding: '0 2px', cursor: 'pointer' }}>×</button>
+    </div>
+  );
+}
+
 function Nav() {
   const [showSubCheck, setShowSubCheck] = useState(false);
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(6,10,20,0.85)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${C.line}` }}>
+      {/* Inside the sticky wrapper, above the nav row, so the two travel
+          together instead of fighting over `top: 0`. */}
+      <InstallAppStrip />
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/logo.svg" alt="Geometriya" width="26" height="26" style={{ display: 'block' }} />
@@ -1022,7 +1071,12 @@ export default function GeometriyaLanding() {
         .geo-badge { display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; color:${C.inkFaint}; border:1px solid ${C.line}; padding:5px 10px; border-radius:20px; }
         .geo-card { background:${C.bgPanel}; border:1px solid ${C.line}; transition: border-color 0.25s ease, transform 0.25s ease; }
         .geo-card:hover { border-color: var(--hc); transform: translateY(-2px); }
-        @media (max-width: 860px) { .geo-nav-links { gap: 16px !important; } .geo-nav-links a:not(:last-child) { display:none; } .geo-hero-grid { grid-template-columns: 1fr !important; } .geo-tools-grid { grid-template-columns: 1fr 1fr !important; } .geo-pricing-grid { grid-template-columns: 1fr !important; } }
+        /* Desktop already has the app one click away in the nav — the strip is
+           only worth the vertical space on a phone. */
+        .geo-install-strip { display: none; }
+        @media (max-width: 860px) { .geo-nav-links { gap: 16px !important; } .geo-nav-links a:not(:last-child) { display:none; } .geo-hero-grid { grid-template-columns: 1fr !important; } .geo-tools-grid { grid-template-columns: 1fr 1fr !important; } .geo-pricing-grid { grid-template-columns: 1fr !important; }
+          .geo-install-strip { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid ${C.line}; background: rgba(79,127,255,.09); }
+        }
         @media (max-width: 520px) { .geo-tools-grid { grid-template-columns: 1fr !important; } }
       `}</style>
 
