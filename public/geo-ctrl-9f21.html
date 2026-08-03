@@ -223,7 +223,9 @@
      Values stay in text ink rather than taking a hue: nothing here encodes a
      category, and green/amber/red are already spoken for by account state.
      Each tile's footnote carries the denominator so a rate is never read bare. */
-  .metrics-grid { grid-template-columns: repeat(6, 1fr); }
+  /* auto-fit rather than a fixed count: tiles get added over time and a
+     hardcoded number silently squashes or orphans them each time. */
+  .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
   .stat-foot {
     font-size: 11px;
@@ -257,9 +259,8 @@
 
   .section-sub { font-size: 11px; color: var(--muted); }
 
-  @media (max-width: 1100px) {
-    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
-  }
+  /* The narrow-screen override auto-fit already handles is gone — it forced
+     exactly 3 columns and would have overridden the wrapping above. */
 
   /* ── Tabs ── */
   .tabs {
@@ -597,6 +598,11 @@
           <div class="stat-value" id="mFree">—</div>
           <div class="stat-foot">trial lapsed, still using</div>
         </div>
+        <div class="stat stat-clickable" onclick="openMetricDetail('incompleteSignups')">
+          <div class="stat-label">Didn't finish signup</div>
+          <div class="stat-value" id="mIncomplete">—</div>
+          <div class="stat-foot">stuck at OTP, no trial started</div>
+        </div>
         <div class="stat stat-clickable" onclick="openMetricDetail('conversion')">
           <div class="stat-label">Conversion</div>
           <div class="stat-value" id="mConv">—</div>
@@ -816,6 +822,7 @@
       set('mTrial', u.inTrial);
       set('mTrialFoot', `${c.stillDeciding} yet to decide`);
       set('mFree', u.freeTier);
+      set('mIncomplete', u.incompleteSignups == null ? '—' : u.incompleteSignups);
 
       // Show the denominator beside the rate. At single-digit n a percentage
       // is noise, and displaying "1 of 1" makes that obvious at a glance.
@@ -896,6 +903,7 @@
     payingNow:  { title: 'Paying now' },
     inTrial:    { title: 'In trial' },
     freeTier:   { title: 'Free tier' },
+    incompleteSignups: { title: "Didn't finish signup" },
     conversion: { title: 'Conversion' },
     lag:        { title: 'Median days to pay' },
     revenue:    { title: 'Revenue' },
@@ -921,6 +929,9 @@
       case 'inTrial':
         return metricTable(['Name', 'Phone', 'Trial ends', 'Days left'], d.inTrial,
           u => [u.name || '—', formatPhone(u.phone), u.trialEndDate ? fullDate(u.trialEndDate) : '—', u.daysLeft ?? '—']);
+      case 'incompleteSignups':
+        return metricTable(['Name', 'Phone', 'Signed up', 'Stuck at'], d.incompleteSignups,
+          u => [u.name || '—', formatPhone(u.phone), fullDate(u.createdAt), u.status || '—']);
       case 'freeTier':
         return metricTable(['Name', 'Phone', 'Signed up', 'Trial ended'], d.freeTier,
           u => [u.name || '—', formatPhone(u.phone), fullDate(u.createdAt), u.trialEndDate ? fullDate(u.trialEndDate) : '—']);
