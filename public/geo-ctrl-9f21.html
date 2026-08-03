@@ -615,6 +615,43 @@
       </div>
 
       <div class="section-head">
+        <h2>Refer &amp; earn</h2>
+        <span class="section-sub" id="referralNote">—</span>
+      </div>
+      <div class="stats" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat">
+          <div class="stat-label">Referred sign-ups</div>
+          <div class="stat-value" id="rReferred">—</div>
+          <div class="stat-foot" id="rReferredFoot">&nbsp;</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Turned into payers</div>
+          <div class="stat-value" id="rConverted">—</div>
+          <div class="stat-foot">of those referred</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Active referrers</div>
+          <div class="stat-value" id="rReferrers">—</div>
+          <div class="stat-foot" id="rReferrersFoot">&nbsp;</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Credit owed</div>
+          <div class="stat-value" id="rCredit">—</div>
+          <div class="stat-foot">unredeemed balance</div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:28px;">
+        <table>
+          <thead><tr>
+            <th>Referred user</th><th>Referred by</th><th>Joined</th><th>Status</th>
+          </tr></thead>
+          <tbody id="referralRows">
+            <tr><td colspan="4" style="color:var(--muted);padding:16px;">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-head">
         <h2>Users</h2>
         <button class="btn" onclick="exportCsv()">Export CSV</button>
       </div>
@@ -799,11 +836,58 @@
       revEl.classList.toggle('thin', parts.length > 1);
       set('mRevFoot', `${p.uniquePayers} payer${p.uniquePayers === 1 ? '' : 's'} · ${p.successful} payment${p.successful === 1 ? '' : 's'}`);
 
+      renderReferrals(m.referral);
+
       set('metricsStamp', 'as of ' + new Date(m.generatedAt).toLocaleString());
     } catch (e) {
       set('metricsStamp', 'unavailable — ' + e.message);
       document.querySelectorAll('#metricsGrid .stat-value').forEach(el => { el.textContent = '—'; });
     }
+  }
+
+  // ── Refer & earn ──
+  // Holding a code means nothing on its own: one is minted for every user the
+  // first time they sign in. What counts is codes that were actually passed on
+  // and used, so the headline number is referred sign-ups, not codes issued.
+  function renderReferrals(r) {
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    const body = document.getElementById('referralRows');
+    if (!r) {
+      set('referralNote', 'unavailable');
+      body.innerHTML = '<tr><td colspan="4" style="color:var(--muted);padding:16px;">No data.</td></tr>';
+      return;
+    }
+
+    const converted = (r.rows || []).filter(x => x.everPaid).length;
+    set('rReferred', r.referredSignups);
+    set('rReferredFoot', `${r.codesIssued} codes issued`);
+    set('rConverted', converted);
+    set('rReferrers', r.referrersWhoConverted);
+    set('rReferrersFoot', r.referrersWhoConverted === 0 ? 'nobody has shared yet' : 'have referred someone');
+    set('rCredit', r.creditOutstanding ? '₹' + r.creditOutstanding.toLocaleString('en-IN') : '₹0');
+    set('referralNote', r.referredSignups === 0
+      ? 'every user has a code — none has been used yet'
+      : `${r.referredSignups} joined through a referral`);
+
+    if (!r.rows || !r.rows.length) {
+      body.innerHTML = '<tr><td colspan="4" style="color:var(--muted);padding:16px;">'
+        + 'No one has signed up through a referral link yet. Codes are issued automatically, '
+        + 'so this fills in as soon as someone shares one and the invitee completes signup.'
+        + '</td></tr>';
+      return;
+    }
+
+    body.innerHTML = r.rows.map(x => {
+      const state = x.subscribed ? ['Subscribed', 'var(--green)']
+        : x.everPaid ? ['Paid, lapsed', 'var(--amber)']
+        : ['In trial', 'var(--muted)'];
+      return `<tr>
+        <td>${escapeHtml(x.referredName || '—')}<div class="mono" style="font-size:11px;color:var(--muted);">${formatPhone(x.referredPhone)}</div></td>
+        <td>${escapeHtml(x.referrerName || '—')}<div class="mono" style="font-size:11px;color:var(--muted);">${escapeHtml(x.referrerCode || '')}</div></td>
+        <td>${x.joinedAt ? fullDate(x.joinedAt) : '—'}</td>
+        <td style="color:${state[1]};">${state[0]}</td>
+      </tr>`;
+    }).join('');
   }
 
   // ── Business metric drill-down ──
@@ -909,7 +993,7 @@
       case 'signed':  return u.created_at ? new Date(u.created_at).getTime() : -Infinity;
       case 'trial':   return u.trial_end_date ? new Date(u.trial_end_date).getTime() : Infinity;
       case 'logins':  return typeof u.login_count === 'number' ? u.login_count : -Infinity;
-      case 'active':  return u.last_login_at ? new Date(u.last_login_at).getTime() : -Infinity;
+      case 'active':  return u.last_seen_at ? new Date(u.last_seen_at).getTime() : -Infinity;
       default:        return 0;
     }
   }
@@ -943,8 +1027,12 @@
     return typeof u.login_count === 'number' ? u.login_count : '—';
   }
 
+  // last_seen_at is stamped on every authenticated request and topped up by
+  // the app's heartbeat while its tab is open, so this is genuine activity,
+  // not just the moment someone last signed in. The column this used to read,
+  // last_login_at, was never created — the whole column rendered "—".
   function lastActiveLabel(u) {
-    return u.last_login_at ? timeAgo(u.last_login_at) : '—';
+    return u.last_seen_at ? timeAgo(u.last_seen_at) : '—';
   }
 
   // Exports exactly what's on screen: current tab, current sort order.
@@ -962,7 +1050,7 @@
       u.created_at ? new Date(u.created_at).toISOString() : '',
       trialInfoPlain(u),
       loginCountLabel(u),
-      u.last_login_at ? new Date(u.last_login_at).toISOString() : '',
+      u.last_seen_at ? new Date(u.last_seen_at).toISOString() : '',
     ].map(csvEscape).join(','));
 
     const csv = [headers.map(csvEscape).join(','), ...rows].join('\r\n');
@@ -1123,7 +1211,7 @@
       detailItem('Joined', fullDate(u.created_at)),
       detailItem('Trial ends', u.trial_end_date ? fullDate(u.trial_end_date) + ` (${trialStatus})` : '—'),
       detailItem('Logins', loginCountLabel(u)),
-      detailItem('Last active', u.last_login_at ? fullDate(u.last_login_at) : '—'),
+      detailItem('Last active', u.last_seen_at ? fullDate(u.last_seen_at) : '—'),
       // Fields your backend doesn't send yet — shown so the layout is ready
       // for them, but never invented.
       detailItem('Plan', u.plan || '—'),
