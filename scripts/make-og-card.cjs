@@ -3,37 +3,38 @@
 //   npm install --no-save sharp && node scripts/make-og-card.cjs
 //
 // sharp is deliberately NOT a dependency — this runs by hand when the card
-// needs changing, and the built PNG is committed. Adding a native image
-// library to the install for something run twice a year is not worth it.
+// changes and the built PNG is committed. Adding a native image library to
+// every install for something touched twice a year is not worth it.
 //
-// If the text renders blank, fontconfig cannot see a usable font; the family
-// stacks below fall back to what Windows and most CI images already have.
+// ── Why this card is only a logo and a name ──
+// WhatsApp uses the large 1.91:1 card layout only when the URL is essentially
+// the whole message. The referral message puts ~290 characters of pitch in
+// front of the link, so WhatsApp falls back to a ~130px square thumbnail.
+// Earlier versions carried a headline, a tagline and two offer pills; at that
+// size all of it was mush. Anything smaller than about a third of the frame
+// cannot be read, so the card now carries the only two things worth
+// recognising at a glance — the mark and the name. The selling is done by the
+// og:description and the message text, which are legible at any size.
 const sharp = require('sharp');
+const path = require('path');
 
-// ── Geometriya social share card, 1200x630 ──
-// 1200x630 is the 1.91:1 Open Graph standard, which is what WhatsApp and
-// Telegram render for a large link preview.
-//
-// The layout is CENTRED, not left-aligned. Smaller previews in some clients
-// centre-crop toward a square, and a left-aligned version of this card lost
-// the first third of every line ("etriya", "c Scaling") when that happened.
-// Everything that has to stay legible therefore sits inside the central
-// 630px band — the widest square that can be taken out of the middle.
 const W = 1200, H = 630, CX = W / 2;
-const c = { bg:'#060a14', ink:'#e8edf8', dim:'#8fa3c4', faint:'#5c7699',
-            blue:'#4f7fff', blueLt:'#7FB1FF', green:'#2fbf71' };
+const c = { bg: '#060a14', ink: '#e8edf8', blue: '#4f7fff' };
 
-// Decorative geometry: the product draws angles on charts, so the card shows
-// that rather than saying it. Anchored to the corners and kept low-contrast
-// so it reads as texture and never competes with the words — and so a crop
-// through it loses nothing that mattered.
+// Background geometry: the product draws angles on charts, so the card shows
+// that rather than saying it. Anchored to the corners, low-contrast, and
+// carrying no information — a crop through it loses nothing.
 const rays = [];
 for (let i = 0; i < 7; i++) {
   const a = (i * 11 + 8) * Math.PI / 180;
-  rays.push(`<line x1="0" y1="${H}" x2="${Math.cos(a)*1500}" y2="${H - Math.sin(a)*1500}" stroke="${c.blue}" stroke-width="1.2" opacity="${0.26 - i*0.028}"/>`);
-  rays.push(`<line x1="${W}" y1="${H}" x2="${W - Math.cos(a)*1500}" y2="${H - Math.sin(a)*1500}" stroke="${c.blue}" stroke-width="1.2" opacity="${0.16 - i*0.02}"/>`);
+  rays.push(`<line x1="0" y1="${H}" x2="${Math.cos(a) * 1500}" y2="${H - Math.sin(a) * 1500}" stroke="${c.blue}" stroke-width="1.2" opacity="${0.26 - i * 0.028}"/>`);
+  rays.push(`<line x1="${W}" y1="${H}" x2="${W - Math.cos(a) * 1500}" y2="${H - Math.sin(a) * 1500}" stroke="${c.blue}" stroke-width="1.2" opacity="${0.16 - i * 0.02}"/>`);
 }
 
+// Centred, not left-aligned: small previews centre-crop toward a square, and
+// a left-aligned version loses its first third when that happens. Both
+// elements sit inside the central 630px band — the widest square croppable
+// from the middle.
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
     <radialGradient id="gL" cx="12%" cy="0%" r="70%"><stop offset="0%" stop-color="#3E7BFA" stop-opacity="0.20"/><stop offset="100%" stop-color="#3E7BFA" stop-opacity="0"/></radialGradient>
@@ -45,26 +46,18 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   <rect width="${W}" height="${H}" fill="url(#gR)"/>
   ${rays.join('')}
 
-  <!-- Brand mark, inlined from public/logo.svg: identical paths, no raster
-       edges, and it stays crisp at whatever size this is rendered to. -->
-  <g transform="translate(${CX - 158},72) scale(0.60)">
+  <!-- The real mark, inlined from public/logo.svg: identical geometry, no
+       raster edges, and it cannot drift from the brand. -->
+  <g transform="translate(${CX - 88},168) scale(1.76)">
     <polygon points="50,17 85,81 15,81" fill="#5A83FF" opacity="0.16"/>
     <polyline points="15,81 50,19 85,81" stroke="#5A83FF" stroke-width="7" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
     <polyline points="33,81 50,50 67,81" stroke="#5A83FF" stroke-width="7" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
   </g>
-  <text x="${CX + 34}" y="${125}" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="bold" fill="${c.ink}">Geometriya</text>
 
-  <text x="${CX}" y="300" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="bold" fill="${c.ink}">Mitotic Scaling</text>
-  <text x="${CX}" y="372" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="31" fill="${c.dim}">Spot turning points before they happen</text>
-
-  <rect x="${CX - 278}" y="462" width="280" height="58" rx="29" fill="${c.blue}" fill-opacity="0.13" stroke="${c.blue}" stroke-opacity="0.55" stroke-width="1.5"/>
-  <text x="${CX - 138}" y="499" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="bold" fill="${c.blueLt}">Free 30-day trial</text>
-  <rect x="${CX + 14}" y="462" width="264" height="58" rx="29" fill="${c.green}" fill-opacity="0.10" stroke="${c.green}" stroke-opacity="0.45" stroke-width="1.5"/>
-  <text x="${CX + 146}" y="499" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="bold" fill="${c.green}">Free forever after</text>
-
-  <text x="${CX}" y="576" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="21" fill="${c.faint}" letter-spacing="1">geometricalanalysis.com</text>
+  <text x="${CX}" y="470" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="bold" fill="${c.ink}" letter-spacing="1">Geometriya</text>
 </svg>`;
 
-sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toFile(require('path').join(__dirname,'..','public','og-card.png'))
-  .then(i => console.log(`written: ${i.width}x${i.height}, ${(i.size/1024).toFixed(0)} KB`))
+sharp(Buffer.from(svg)).png({ compressionLevel: 9 })
+  .toFile(path.join(__dirname, '..', 'public', 'og-card.png'))
+  .then(i => console.log(`written: ${i.width}x${i.height}, ${(i.size / 1024).toFixed(0)} KB`))
   .catch(e => console.log('FAILED:', e.message));
