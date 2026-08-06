@@ -54,9 +54,8 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   </g>
   <text x="${CX + 34}" y="${125}" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="bold" fill="${c.ink}">Geometriya</text>
 
-  <text x="${CX}" y="278" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="bold" fill="${c.ink}">Mitotic Scaling</text>
-  <text x="${CX}" y="342" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="${c.dim}">Geometry drawn directly on your charts</text>
-  <text x="${CX}" y="410" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="${c.faint}">Gann angles · Fibonacci · Vortex · NSE, US, FX</text>
+  <text x="${CX}" y="300" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="bold" fill="${c.ink}">Mitotic Scaling</text>
+  <text x="${CX}" y="372" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="31" fill="${c.dim}">Spot turning points before they happen</text>
 
   <rect x="${CX - 278}" y="462" width="280" height="58" rx="29" fill="${c.blue}" fill-opacity="0.13" stroke="${c.blue}" stroke-opacity="0.55" stroke-width="1.5"/>
   <text x="${CX - 138}" y="499" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="bold" fill="${c.blueLt}">Free 30-day trial</text>
