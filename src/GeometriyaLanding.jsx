@@ -500,6 +500,35 @@ const fmtPrice = (p, amount) =>
 // different subdomain or path.
 const APP_URL = 'https://app.geometricalanalysis.com';
 
+// ── Refer & Earn: catching the code from a shared link ──
+// Referral links now point here rather than straight at the app, because the
+// app opens on a login form — a stranger arriving from a friend's WhatsApp
+// message saw a password box for a product nobody had described to them.
+// The landing page has to do the explaining, so it also has to carry the code.
+//
+// Stored rather than read from the URL at submit time: the code arrives on
+// the first page view, and signing up happens a scroll and a form later, by
+// which point the parameter may be gone. This mirrors what the app already
+// does with ?ref=, deliberately using the same key name.
+//
+// Plain strings, not JSON — the app's lsGet/lsSet pair JSON-encodes, but these
+// are separate origins (www vs app) with separate storage, so the formats
+// never meet.
+const REFERRAL_CODE_KEY = 'geo_referral_code';
+
+function captureReferralCode() {
+  try {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref) localStorage.setItem(REFERRAL_CODE_KEY, ref.trim().toUpperCase());
+  } catch { /* private mode — referral credit is not worth failing a page load */ }
+}
+function readReferralCode() {
+  try { return localStorage.getItem(REFERRAL_CODE_KEY) || null; } catch { return null; }
+}
+function clearReferralCode() {
+  try { localStorage.removeItem(REFERRAL_CODE_KEY); } catch { /* nothing to do */ }
+}
+
 function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [step, setStep] = useState('details'); // details | otp | success | already_registered
   const [name, setName] = useState('');
@@ -577,7 +606,12 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, email, password }),
+        // Referral code from a shared link. Read from storage rather than the
+        // URL because the code arrives on first landing and signup usually
+        // happens several scrolls and one form later — by then the parameter
+        // may be long gone. Without this the referrer earned nothing, which
+        // is most of why 61 codes had produced no credited signups.
+        body: JSON.stringify({ name, phone, email, password, referralCode: readReferralCode() || undefined }),
       });
       const data = await res.json();
       if (res.status === 409) {
@@ -680,6 +714,10 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       // directly — so the token travels as a URL param, and the app picks it up on load.
       setStep('success');
       setStatus('idle');
+      // Consumed — the account now carries referred_by_code, and leaving it in
+      // storage would attach the same referrer to any later signup from this
+      // browser (a shared laptop, a family phone).
+      clearReferralCode();
       const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
       setTimeout(() => { window.location.href = dest; }, 1200);
     } catch (err) {
@@ -1064,6 +1102,8 @@ export default function GeometriyaLanding() {
   useEffect(() => {
     fetch(planInfoUrl()).then(r => r.json()).then(setPlanPrices).catch(() => {});
   }, []);
+  // Grab ?ref= on arrival, before any in-page navigation can drop it.
+  useEffect(() => { captureReferralCode(); }, []);
   return (
     <div style={{ background: PAGE_BG, color: RD.ink, minHeight: '100vh', fontFamily: "'Space Grotesk', sans-serif" }}>
       <style>{FONTS}{HERO_MONITOR_CSS}{RD_PANEL_CSS}{`
