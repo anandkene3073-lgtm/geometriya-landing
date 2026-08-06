@@ -13,25 +13,26 @@
          looked like to the person receiving it.
 
          Absolute URLs are required — crawlers do not resolve relative paths.
-         og:image is the hero chart at 960x671; WhatsApp crops toward 1.91:1,
-         which a chart survives better than a layout with text near the edges.
-         A purpose-made 1200x630 card would be sharper still. -->
+         og:image is a purpose-made 1200x630 card (scripts/make-og-card.cjs),
+         not a reused screenshot. Its layout is centred because small previews
+         in some clients centre-crop toward a square; a left-aligned version
+         lost the first third of every line when that happened. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Geometriya" />
     <meta property="og:url" content="https://www.geometricalanalysis.com/" />
     <meta property="og:title" content="Geometriya — Geometric Market Analysis" />
     <meta property="og:description" content="Gann, Fibonacci, Vortex and Mitotic Scaling tools for NSE stocks. Start a free 30-day trial." />
-    <meta property="og:image" content="https://www.geometricalanalysis.com/hero-chart-gann.jpg" />
-    <meta property="og:image:width" content="960" />
-    <meta property="og:image:height" content="671" />
-    <meta property="og:image:alt" content="A Geometriya chart with Gann angles drawn over an NSE stock." />
+    <meta property="og:image" content="https://www.geometricalanalysis.com/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Geometriya — Mitotic Scaling: geometry drawn directly on your charts." />
     <meta property="og:locale" content="en_IN" />
 
     <!-- X/Twitter ignores Open Graph for card type, so it needs its own. -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Geometriya — Geometric Market Analysis" />
     <meta name="twitter:description" content="Gann, Fibonacci, Vortex and Mitotic Scaling tools for NSE stocks. Start a free 30-day trial." />
-    <meta name="twitter:image" content="https://www.geometricalanalysis.com/hero-chart-gann.jpg" />
+    <meta name="twitter:image" content="https://www.geometricalanalysis.com/og-card.png" />
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
