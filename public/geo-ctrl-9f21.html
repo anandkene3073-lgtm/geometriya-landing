@@ -378,6 +378,35 @@
 
   .hidden { display: none !important; }
 
+  /* ── Compose (email broadcast) ── */
+  .compose-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  .compose-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .compose-card select,
+  .compose-card textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .compose-card select:focus, .compose-card textarea:focus { outline: none; border-color: var(--accent); }
+  .compose-card textarea { resize: vertical; line-height: 1.6; }
+  .compose-card .btn { margin-bottom: 18px; }
+  .label-hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); }
+  .compose-result { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .compose-result.ok { color: var(--green); }
+  .compose-result.err { color: var(--red); }
+
   /* ── User detail modal ── */
   .modal-overlay {
     position: fixed;
@@ -730,6 +759,45 @@
           <div class="small" id="emptyMsg"></div>
         </div>
       </div>
+
+      <!-- ── Compose — email broadcast via POST /api/admin/broadcast.
+           Same Resend account the OTP mail uses; recipients each get an
+           individual email (no shared To: line). {{name}} personalises. -->
+      <div class="section-head" style="margin-top:28px;">
+        <h2>Email clients</h2>
+        <span class="section-sub">sent one-by-one via Resend — addresses are never shared between recipients</span>
+      </div>
+      <div class="compose-card">
+        <div class="compose-row">
+          <div style="flex:1; min-width:220px;">
+            <label for="bcAudience">Audience</label>
+            <select id="bcAudience" onchange="updateBcCount()">
+              <option value="all">Everyone</option>
+              <option value="approved">Approved</option>
+              <option value="in_trial">In trial</option>
+              <option value="paying">Paying</option>
+              <option value="free_tier">Free tier (trial lapsed)</option>
+              <option value="pending_approval">Pending approval</option>
+            </select>
+          </div>
+          <div style="flex:2; min-width:260px;">
+            <label for="bcSubject">Subject</label>
+            <input id="bcSubject" type="text" placeholder="e.g. New: Elliot Wave tools are live" />
+          </div>
+        </div>
+        <label for="bcBody">Message <span class="label-hint">plain text — {{name}} becomes each client's name, blank lines are kept</span></label>
+        <textarea id="bcBody" rows="7" placeholder="Hi {{name}},&#10;&#10;We've just added…"></textarea>
+        <div class="compose-row" style="align-items:flex-end;">
+          <div style="flex:1; min-width:220px;">
+            <label for="bcTestTo">Test address</label>
+            <input id="bcTestTo" type="email" placeholder="you@example.com" />
+          </div>
+          <button class="btn" id="bcTestBtn" onclick="sendBroadcastTest()">Send test</button>
+          <div style="flex:1;"></div>
+          <button class="btn btn-accent" id="bcSendBtn" onclick="sendBroadcast()">Send to — clients</button>
+        </div>
+        <div id="bcResult" class="compose-result"></div>
+      </div>
     </main>
   </div>
 
@@ -835,9 +903,12 @@
     document.getElementById('loginScreen').classList.remove('hidden');
   }
 
+  let rawUsers = [];   // full list as returned by the server, for the Compose audience counts
+
   async function loadUsers() {
     try {
       const data = await apiCall('/api/admin/users');
+      rawUsers = data.users;
       allUsers = { active: [], deactivated: [] };
       for (const u of data.users) {
         // is_active defaults to true for any user created before this column existed
@@ -847,9 +918,107 @@
       document.getElementById('statDeactivated').textContent = allUsers.deactivated.length;
       document.getElementById('statTotal').textContent = data.users.length;
       renderTable();
+      updateBcCount();
       loadMetrics();
     } catch (e) {
       showToast(e.message, 'error');
+    }
+  }
+
+  // ── Compose ──────────────────────────────────────────────────────────────
+  // Mirrors the server's broadcastAudienceMatch — the count shown on the
+  // Send button is informational; the server re-filters authoritatively.
+  function bcMatch(u, audience) {
+    const now = Date.now();
+    const ts = v => (v ? new Date(v).getTime() : null);
+    const paying = ts(u.subscription_end_date) != null && ts(u.subscription_end_date) > now;
+    const inTrial = u.status === 'approved' && !paying && ts(u.trial_end_date) != null && ts(u.trial_end_date) > now;
+    switch (audience) {
+      case 'all':              return true;
+      case 'approved':         return u.status === 'approved';
+      case 'pending_approval': return u.status === 'pending_approval';
+      case 'paying':           return paying;
+      case 'in_trial':         return inTrial;
+      case 'free_tier':        return u.status === 'approved' && !paying && !inTrial;
+      default:                 return false;
+    }
+  }
+
+  function bcRecipients() {
+    const audience = document.getElementById('bcAudience').value;
+    const seen = new Set();
+    let n = 0;
+    for (const u of rawUsers) {
+      if (u.is_active === false) continue;
+      if (!bcMatch(u, audience)) continue;
+      const email = (u.email || '').trim().toLowerCase();
+      if (!email || seen.has(email)) continue;
+      seen.add(email);
+      n++;
+    }
+    return n;
+  }
+
+  function updateBcCount() {
+    const n = bcRecipients();
+    const btn = document.getElementById('bcSendBtn');
+    btn.textContent = `Send to ${n} client${n === 1 ? '' : 's'}`;
+    btn.disabled = n === 0;
+  }
+
+  function bcResult(msg, cls) {
+    const el = document.getElementById('bcResult');
+    el.textContent = msg;
+    el.className = 'compose-result ' + (cls || '');
+  }
+
+  function bcInputs() {
+    return {
+      subject: document.getElementById('bcSubject').value.trim(),
+      body: document.getElementById('bcBody').value.trim(),
+      audience: document.getElementById('bcAudience').value,
+    };
+  }
+
+  async function sendBroadcastTest() {
+    const { subject, body } = bcInputs();
+    const testTo = document.getElementById('bcTestTo').value.trim();
+    if (!subject || !body) return bcResult('Write the subject and message first.', 'err');
+    if (!testTo) return bcResult('Enter the address to send the test to.', 'err');
+    const btn = document.getElementById('bcTestBtn');
+    btn.disabled = true;
+    try {
+      await apiCall('/api/admin/broadcast', { method: 'POST', body: JSON.stringify({ subject, body, testTo }) });
+      bcResult(`Test sent to ${testTo} — check how it looks before the real send.`, 'ok');
+    } catch (e) {
+      bcResult('Test failed: ' + e.message, 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function sendBroadcast() {
+    const { subject, body, audience } = bcInputs();
+    if (!subject || !body) return bcResult('Write the subject and message first.', 'err');
+    const n = bcRecipients();
+    if (!n) return bcResult('That audience has no clients with an email address.', 'err');
+    const label = document.querySelector(`#bcAudience option[value="${audience}"]`).textContent;
+    if (!confirm(`Send "${subject}" to ${n} client${n === 1 ? '' : 's'} (${label})?\n\nThis emails real clients immediately.`)) return;
+    const btn = document.getElementById('bcSendBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Sending…';
+    try {
+      const r = await apiCall('/api/admin/broadcast', { method: 'POST', body: JSON.stringify({ subject, body, audience }) });
+      bcResult(`Sent to ${r.sent} client${r.sent === 1 ? '' : 's'}` +
+        (r.failed ? ` — ${r.failed} FAILED (${(r.failures || []).join('; ')})` : '') +
+        (r.skippedNoEmail ? ` · ${r.skippedNoEmail} skipped (no email on file)` : '') + '.',
+        r.failed ? 'err' : 'ok');
+      showToast(r.failed ? 'Broadcast finished with failures.' : 'Broadcast sent.', r.failed ? 'error' : 'success');
+    } catch (e) {
+      bcResult('Send failed: ' + e.message, 'err');
+    } finally {
+      btn.disabled = false;
+      updateBcCount();
     }
   }
 
