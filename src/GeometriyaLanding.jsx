@@ -1020,6 +1020,15 @@ function Nav() {
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>{l}</a>
           ))}
           <a href="#" onClick={e => { e.preventDefault(); setShowSubCheck(true); }} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>My Plan</a>
+          {/* Desktop's actual one-click install path — the mobile install
+              strip above is hidden here (>860px), and until this existed
+              nothing in the nav offered install at all despite the strip's
+              own comment assuming it did. Hidden on mobile by the same
+              `a:not(:last-child)` rule that trims Method/Tools/Pricing/My
+              Plan, so it never duplicates the strip. Same ?install=1
+              hand-off the strip uses — app.geometricalanalysis.com reads it
+              generically and surfaces its install prompt immediately. */}
+          <a href={`${APP_URL}/?install=1`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>Get the app</a>
           <a href={APP_URL} style={{ color: RD.ink, textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Login</a>
           <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none' }}>Try It Free</a>
         </div>
