@@ -1320,13 +1320,21 @@ export default function GeometriyaLanding() {
                   textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
                   background: RD.blue, color: '#fff', border: 'none',
                 }}>Try It Free</a>
+                {/* Direct purchase — no trial required, and equally for someone
+                    already mid-trial who's ready to pay. Lands on the app with
+                    ?buy=<cycle>: after sign-in (or a fresh mobile-number signup)
+                    the checkout opens by itself for the cycle picked above. */}
+                <a href={`${APP_URL}/?buy=${cyc.key}`} style={{
+                  textAlign: 'center', padding: '11px 0', marginTop: 10, borderRadius: 6, fontWeight: 600, fontSize: 14, textDecoration: 'none',
+                  background: 'transparent', color: RD.ink, border: `1px solid ${RD.border}`,
+                }}>Buy now — start today, no trial needed</a>
               </div>
             </div>
           );
         })()}
 
         <p style={{ marginTop: 28, textAlign: 'center', fontSize: 12.5, color: RD.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
-          Every plan starts with a 30-day free trial — just your mobile number, nothing to pay upfront.
+          Every plan starts with a 30-day free trial — just your mobile number, nothing to pay upfront. Ready already? Buy directly, or upgrade any time mid-trial from 👤 My Account in the app.
         </p>
       </section>
 
