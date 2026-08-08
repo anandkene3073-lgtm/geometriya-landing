@@ -640,6 +640,20 @@
         </div>
       </div>
 
+      <!-- ── Service Health (GET /api/admin/service-health) ──
+           Third-party quota/expiry checks — Supabase disk, Resend/MSG91
+           sending quota, Render/Vercel hosting bandwidth, domain expiry.
+           Each service is independent server-side (see checkXxx in
+           server.js): one being unconfigured or erroring never blocks the
+           others, so this always renders whatever it has. -->
+      <div class="section-head">
+        <h2>Service Health</h2>
+        <span class="section-sub mono" id="serviceHealthStamp">—</span>
+      </div>
+      <div class="stats" id="serviceHealthGrid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 28px;">
+        <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
+      </div>
+
       <!-- ── Business metrics (GET /api/admin/metrics) ──
            Deliberately plain tiles, not charts: these are small counts with no
            history stored, so there is no trend to plot. Rates carry their own
@@ -926,8 +940,45 @@
       renderTable();
       updateBcCount();
       loadMetrics();
+      loadServiceHealth();
     } catch (e) {
       showToast(e.message, 'error');
+    }
+  }
+
+  // ── Service Health — third-party quota/expiry monitoring. Renders
+  // whatever the server returns, service by service; a service missing its
+  // API key server-side comes back 'unconfigured' rather than an error, so
+  // the tile explains what to add instead of looking broken.
+  const SERVICE_HEALTH_COLORS = {
+    ok: 'var(--green)', warning: 'var(--amber)', critical: 'var(--red)',
+    unconfigured: 'var(--muted)', error: 'var(--red)',
+  };
+  const SERVICE_HEALTH_LABELS = {
+    ok: 'OK', warning: 'Warning', critical: 'Critical',
+    unconfigured: 'Not set up', error: 'Error',
+  };
+  async function loadServiceHealth() {
+    const grid = document.getElementById('serviceHealthGrid');
+    try {
+      const data = await apiCall('/api/admin/service-health');
+      document.getElementById('serviceHealthStamp').textContent =
+        'checked ' + new Date(data.checkedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      grid.innerHTML = (data.services || []).map(s => {
+        const col = SERVICE_HEALTH_COLORS[s.status] || 'var(--muted)';
+        const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
+        return `
+          <div class="stat" style="border-color:${s.status === 'critical' || s.status === 'error' ? col : 'var(--border)'}">
+            <div class="stat-label" style="display:flex;align-items:center;gap:6px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+              ${s.name}
+            </div>
+            <div class="stat-value thin" style="color:${col};">${lbl}</div>
+            <div class="stat-foot">${s.detail || ''}</div>
+          </div>`;
+      }).join('');
+    } catch (e) {
+      grid.innerHTML = `<div class="stat"><div class="stat-label">Service Health</div><div class="stat-value" style="color:var(--red);font-size:13px;">Could not load</div><div class="stat-foot">${e.message}</div></div>`;
     }
   }
 
