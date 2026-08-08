@@ -749,6 +749,11 @@
         <div class="tab" data-status="deactivated" onclick="switchTab('deactivated')">Deactivated</div>
       </div>
 
+      <div style="max-width:360px; margin-bottom:14px;">
+        <input id="userSearch" type="search" placeholder="Search by name, phone, or email…"
+          oninput="onSearchInput(this.value)" style="margin-bottom:0;" />
+      </div>
+
       <div class="table-wrap">
         <table id="usersTable">
           <thead id="tableHead"></thead>
@@ -845,6 +850,7 @@
   // Default: soonest-expiring trials float to the top.
   let sortCol = 'trial';
   let sortDir = 'asc';
+  let searchQuery = '';
 
   document.getElementById('apiBaseInput').value = API_BASE;
 
@@ -944,6 +950,12 @@
     }
   }
 
+  // Mirrors the server's reserved-domain filter — example.com etc. are
+  // permanently reserved for docs/testing and Resend refuses them outright,
+  // so the preview count should never promise to send one.
+  const RESERVED_TEST_EMAIL_DOMAINS = new Set(['example.com', 'example.net', 'example.org', 'example.edu', 'test.com', 'invalid']);
+  const isReservedTestEmail = (email) => RESERVED_TEST_EMAIL_DOMAINS.has(email.split('@')[1] || '');
+
   function bcRecipients() {
     const audience = document.getElementById('bcAudience').value;
     const seen = new Set();
@@ -952,7 +964,7 @@
       if (u.is_active === false) continue;
       if (!bcMatch(u, audience)) continue;
       const email = (u.email || '').trim().toLowerCase();
-      if (!email || seen.has(email)) continue;
+      if (!email || seen.has(email) || isReservedTestEmail(email)) continue;
       seen.add(email);
       n++;
     }
@@ -1011,7 +1023,8 @@
       const r = await apiCall('/api/admin/broadcast', { method: 'POST', body: JSON.stringify({ subject, body, audience }) });
       bcResult(`Sent to ${r.sent} client${r.sent === 1 ? '' : 's'}` +
         (r.failed ? ` — ${r.failed} FAILED (${(r.failures || []).join('; ')})` : '') +
-        (r.skippedNoEmail ? ` · ${r.skippedNoEmail} skipped (no email on file)` : '') + '.',
+        (r.skippedNoEmail ? ` · ${r.skippedNoEmail} skipped (no email on file)` : '') +
+        (r.skippedInvalid ? ` · ${r.skippedInvalid} skipped (test/placeholder address)` : '') + '.',
         r.failed ? 'err' : 'ok');
       showToast(r.failed ? 'Broadcast finished with failures.' : 'Broadcast sent.', r.failed ? 'error' : 'success');
     } catch (e) {
@@ -1282,6 +1295,28 @@
     renderTable();
   }
 
+  function onSearchInput(v) {
+    searchQuery = v.trim().toLowerCase();
+    renderTable();
+  }
+
+  // Name/email match as a plain substring; phone match strips non-digits from
+  // both sides so formatting (+91, spaces, dashes) never breaks a search.
+  function matchesSearch(u, q) {
+    if (!q) return true;
+    const name = (u.name || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    if (name.includes(q) || email.includes(q)) return true;
+    const qDigits = q.replace(/\D/g, '');
+    if (!qDigits) return false;
+    return (u.phone || '').replace(/\D/g, '').includes(qDigits);
+  }
+
+  function filteredUsers() {
+    const users = allUsers[currentTab] || [];
+    return searchQuery ? users.filter(u => matchesSearch(u, searchQuery)) : users;
+  }
+
   function loginCountLabel(u) {
     return typeof u.login_count === 'number' ? u.login_count : '—';
   }
@@ -1294,9 +1329,9 @@
     return u.last_seen_at ? timeAgo(u.last_seen_at) : '—';
   }
 
-  // Exports exactly what's on screen: current tab, current sort order.
+  // Exports exactly what's on screen: current tab, current search, current sort order.
   function exportCsv() {
-    const users = sortUsers(allUsers[currentTab] || []);
+    const users = sortUsers(filteredUsers());
     if (!users.length) { showToast('Nothing to export.', 'error'); return; }
 
     const headers = ['Name', 'Phone', 'Email', 'Signed up', 'Trial', 'Logins', 'Last active'];
@@ -1326,7 +1361,7 @@
   }
 
   function renderTable() {
-    const users = allUsers[currentTab];
+    const users = filteredUsers();
     const head = document.getElementById('tableHead');
     const body = document.getElementById('tableBody');
     const empty = document.getElementById('emptyState');
@@ -1335,8 +1370,9 @@
     if (!users || users.length === 0) {
       table.classList.add('hidden');
       empty.classList.remove('hidden');
-      document.getElementById('emptyMsg').textContent =
-        currentTab === 'active' ? 'No active users yet.' : 'No deactivated users.';
+      document.getElementById('emptyMsg').textContent = searchQuery
+        ? `No ${currentTab} users match "${searchQuery}".`
+        : (currentTab === 'active' ? 'No active users yet.' : 'No deactivated users.');
       return;
     }
     table.classList.remove('hidden');
