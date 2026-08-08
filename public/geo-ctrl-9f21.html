@@ -247,6 +247,24 @@
     margin-bottom: 12px;
   }
 
+  /* The h2 + chevron together are the click target — cursor and a hover
+     tint make it read as interactive without touching the section-sub
+     text (a stamp/CSV button) that sits on the same row. */
+  .section-title {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-title:hover h2 { color: var(--text); }
+  .section-chevron {
+    font-size: 10px;
+    color: var(--border);
+    transition: transform 0.15s ease;
+    display: inline-block;
+  }
+
   .section-head h2 {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 13px;
@@ -647,11 +665,16 @@
            server.js): one being unconfigured or erroring never blocks the
            others, so this always renders whatever it has. -->
       <div class="section-head">
-        <h2>Service Health</h2>
+        <div class="section-title" onclick="toggleSection('service-health')">
+          <span class="section-chevron" id="chev-service-health">▾</span>
+          <h2>Service Health</h2>
+        </div>
         <span class="section-sub mono" id="serviceHealthStamp">—</span>
       </div>
-      <div class="stats" id="serviceHealthGrid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 28px;">
-        <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
+      <div id="sec-service-health">
+        <div class="stats" id="serviceHealthGrid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 28px;">
+          <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
+        </div>
       </div>
 
       <!-- ── Business metrics (GET /api/admin/metrics) ──
@@ -660,9 +683,13 @@
            denominator inline — a bare "100%" off one user reads as a result
            rather than the noise it is. -->
       <div class="section-head">
-        <h2>Business</h2>
+        <div class="section-title" onclick="toggleSection('business')">
+          <span class="section-chevron" id="chev-business">▾</span>
+          <h2>Business</h2>
+        </div>
         <span class="section-sub mono" id="metricsStamp">—</span>
       </div>
+      <div id="sec-business">
       <div class="stats metrics-grid" id="metricsGrid">
         <div class="stat stat-clickable" onclick="openMetricDetail('onlineNow')">
           <div class="stat-label">Online now</div>
@@ -715,11 +742,16 @@
           <div class="stat-foot" id="mRevFoot">&nbsp;</div>
         </div>
       </div>
+      </div>
 
       <div class="section-head">
-        <h2>Refer &amp; earn</h2>
+        <div class="section-title" onclick="toggleSection('refer-earn')">
+          <span class="section-chevron" id="chev-refer-earn">▾</span>
+          <h2>Refer &amp; earn</h2>
+        </div>
         <span class="section-sub" id="referralNote">—</span>
       </div>
+      <div id="sec-refer-earn">
       <div class="stats" style="grid-template-columns: repeat(4, 1fr);">
         <div class="stat">
           <div class="stat-label">Referred sign-ups</div>
@@ -752,12 +784,17 @@
           </tbody>
         </table>
       </div>
+      </div>
 
       <div class="section-head">
-        <h2>Users</h2>
+        <div class="section-title" onclick="toggleSection('users')">
+          <span class="section-chevron" id="chev-users">▾</span>
+          <h2>Users</h2>
+        </div>
         <button class="btn" onclick="exportCsv()">Export CSV</button>
       </div>
 
+      <div id="sec-users">
       <div class="tabs">
         <div class="tab active" data-status="active" onclick="switchTab('active')">Active</div>
         <div class="tab" data-status="deactivated" onclick="switchTab('deactivated')">Deactivated</div>
@@ -778,14 +815,19 @@
           <div class="small" id="emptyMsg"></div>
         </div>
       </div>
+      </div>
 
       <!-- ── Compose — email broadcast via POST /api/admin/broadcast.
            Same Resend account the OTP mail uses; recipients each get an
            individual email (no shared To: line). {{name}} personalises. -->
       <div class="section-head" style="margin-top:28px;">
-        <h2>Email clients</h2>
+        <div class="section-title" onclick="toggleSection('email-clients')">
+          <span class="section-chevron" id="chev-email-clients">▾</span>
+          <h2>Email clients</h2>
+        </div>
         <span class="section-sub">sent one-by-one via Resend — addresses are never shared between recipients</span>
       </div>
+      <div id="sec-email-clients">
       <div class="compose-card">
         <div class="compose-row">
           <div style="flex:1; min-width:220px;">
@@ -816,6 +858,7 @@
           <button class="btn btn-accent" id="bcSendBtn" onclick="sendBroadcast()">Send to — clients</button>
         </div>
         <div id="bcResult" class="compose-result"></div>
+      </div>
       </div>
     </main>
   </div>
@@ -865,6 +908,28 @@
   let sortCol = 'trial';
   let sortDir = 'asc';
   let searchQuery = '';
+
+  // ── Collapsible section heads (Service Health / Business / Refer & earn /
+  // Users / Email clients) — persisted per browser so a section you close
+  // stays closed across reloads, same as everything else on this page.
+  const SECTION_COLLAPSE_KEY = 'geo_admin_collapsedSections';
+  const SECTION_KEYS = ['service-health', 'business', 'refer-earn', 'users', 'email-clients'];
+  let collapsedSections = (() => {
+    try { return JSON.parse(localStorage.getItem(SECTION_COLLAPSE_KEY)) || {}; } catch { return {}; }
+  })();
+  function applySectionCollapse(key) {
+    const body = document.getElementById('sec-' + key);
+    const chevron = document.getElementById('chev-' + key);
+    const collapsed = !!collapsedSections[key];
+    if (body) body.classList.toggle('hidden', collapsed);
+    if (chevron) chevron.textContent = collapsed ? '▸' : '▾';
+  }
+  function toggleSection(key) {
+    collapsedSections[key] = !collapsedSections[key];
+    try { localStorage.setItem(SECTION_COLLAPSE_KEY, JSON.stringify(collapsedSections)); } catch {}
+    applySectionCollapse(key);
+  }
+  SECTION_KEYS.forEach(applySectionCollapse);
 
   document.getElementById('apiBaseInput').value = API_BASE;
 
