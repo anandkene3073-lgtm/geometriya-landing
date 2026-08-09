@@ -780,7 +780,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
           </div>
         )}
         <div style={{ width: '100%', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
-          Sent to your phone and email. Didn&rsquo;t get it?{' '}
+          Sent to your email — check your inbox and spam folder. Didn&rsquo;t get it?{' '}
           <span
             onClick={() => { setStep('details'); setOtp(''); setStatus('idle'); setErrorMsg(''); }}
             style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
@@ -843,7 +843,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         {status === 'loading' ? 'Sending…' : 'Get Early Access'}
       </button>
       <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
-        We&rsquo;ll send a verification code to your phone and email to confirm your account.
+        We&rsquo;ll send a verification code to your email to confirm your account.
       </div>
       {status === 'error' && (
         <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
@@ -924,7 +924,7 @@ function SubscriptionCheckModal({ open, onClose }) {
 
         {step === 'otp' && (
           <>
-            <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Enter the code sent to your phone/email. {devOtpHint}</div>
+            <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Enter the code sent to your email (check spam too). {devOtpHint}</div>
             <input value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit code" style={inputStyle} />
             <button disabled={loading} onClick={verifyOtp} style={btnStyle}>{loading ? 'Verifying…' : 'Verify'}</button>
           </>
