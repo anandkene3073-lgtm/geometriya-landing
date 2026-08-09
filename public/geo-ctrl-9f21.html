@@ -207,12 +207,18 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
+    /* A long unbroken label (a domain name, a service name) must wrap
+       inside the tile rather than pushing past its edge — flex children
+       don't wrap by default (min-width:auto), so both are needed. */
+    overflow-wrap: anywhere;
+    min-width: 0;
   }
 
   .stat-value {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 28px;
     font-weight: 700;
+    overflow-wrap: anywhere;
   }
 
   .stat.pending .stat-value { color: var(--amber); }
@@ -258,11 +264,20 @@
     user-select: none;
   }
   .section-title:hover h2 { color: var(--text); }
+  .section-title:hover .section-chevron { color: var(--text); border-color: var(--accent); }
   .section-chevron {
-    font-size: 10px;
-    color: var(--border);
-    transition: transform 0.15s ease;
-    display: inline-block;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    flex-shrink: 0;
   }
 
   .section-head h2 {
@@ -1034,9 +1049,9 @@
         const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
         return `
           <div class="stat" style="border-color:${s.status === 'critical' || s.status === 'error' ? col : 'var(--border)'}">
-            <div class="stat-label" style="display:flex;align-items:center;gap:6px;">
-              <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;"></span>
-              ${s.name}
+            <div class="stat-label" style="display:flex;align-items:flex-start;gap:6px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;margin-top:3px;"></span>
+              <span style="flex:1;min-width:0;">${s.name}</span>
             </div>
             <div class="stat-value thin" style="color:${col};">${lbl}</div>
             <div class="stat-foot">${s.detail || ''}</div>
