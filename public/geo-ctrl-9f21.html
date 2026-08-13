@@ -1042,24 +1042,93 @@
     const grid = document.getElementById('serviceHealthGrid');
     try {
       const data = await apiCall('/api/admin/service-health');
+      lastServiceHealth = data;
       document.getElementById('serviceHealthStamp').textContent =
         'checked ' + new Date(data.checkedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-      grid.innerHTML = (data.services || []).map(s => {
+      grid.innerHTML = (data.services || []).map((s, i) => {
         const col = SERVICE_HEALTH_COLORS[s.status] || 'var(--muted)';
         const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
+        // A service that ships a droplet list has more to say than fits in a
+        // tile foot, so it becomes clickable and opens the full inventory.
+        const drillable = Array.isArray(s.droplets) && s.droplets.length;
         return `
-          <div class="stat" style="border-color:${s.status === 'critical' || s.status === 'error' ? col : 'var(--border)'}">
+          <div class="stat${drillable ? ' stat-clickable' : ''}"${drillable ? ` onclick="openServiceDetail(${i})"` : ''}
+               style="border-color:${s.status === 'critical' || s.status === 'error' ? col : 'var(--border)'}">
             <div class="stat-label" style="display:flex;align-items:flex-start;gap:6px;">
               <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;margin-top:3px;"></span>
               <span style="flex:1;min-width:0;">${s.name}</span>
             </div>
             <div class="stat-value thin" style="color:${col};">${lbl}</div>
-            <div class="stat-foot">${s.detail || ''}</div>
+            <div class="stat-foot">${escapeHtml(s.detail || '')}${drillable ? ' <span style="opacity:.6">· click for detail</span>' : ''}</div>
           </div>`;
       }).join('');
     } catch (e) {
       grid.innerHTML = `<div class="stat"><div class="stat-label">Service Health</div><div class="stat-value" style="color:var(--red);font-size:13px;">Could not load</div><div class="stat-foot">${e.message}</div></div>`;
     }
+  }
+
+  // ── Droplet inventory drill-down.
+  // Reuses the metric modal rather than adding a second one. Split across two
+  // tables on purpose: identity/state is what you look at during an incident,
+  // and specs/addresses is what you look at when planning or connecting —
+  // one fourteen-column table serves neither.
+  function openServiceDetail(index) {
+    const s = ((lastServiceHealth || {}).services || [])[index];
+    if (!s || !Array.isArray(s.droplets)) return;
+    const money = n => '$' + Number(n || 0).toFixed(2);
+    const dot = st => ({ active: 'var(--green)', off: 'var(--red)', new: 'var(--amber)' }[st] || 'var(--muted)');
+
+    const summary = [
+      `${s.droplets.length} droplet${s.droplets.length === 1 ? '' : 's'}`,
+      s.runRateMonthlyUsd ? `${money(s.runRateMonthlyUsd)}/mo run rate` : null,
+      s.billing ? `${money(s.billing.monthToDateUsd)} month-to-date` : null,
+      s.billing && s.billing.accountBalanceUsd ? `balance ${money(s.billing.accountBalanceUsd)}` : null,
+    ].filter(Boolean).join('  ·  ');
+
+    document.getElementById('metricTitle').textContent = s.name;
+    document.getElementById('metricSub').textContent = summary;
+    document.getElementById('metricBody').innerHTML = `
+      <div class="modal-section-title" style="padding-top:0;border-top:none;">State</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Droplet</th><th>Status</th><th>Region</th><th>Age</th><th>Backups</th><th>Monitoring</th><th>Cost</th></tr></thead>
+        <tbody>${s.droplets.map(d => `<tr>
+          <td>${escapeHtml(d.name)}</td>
+          <td><span style="color:${dot(d.status)};font-weight:700;">${escapeHtml(d.status)}</span></td>
+          <td>${escapeHtml(d.region)}</td>
+          <td>${d.ageDays == null ? '—' : d.ageDays + 'd'}</td>
+          <td>${d.backups ? 'on' : '<span style="color:var(--amber)">off</span>'}</td>
+          <td>${d.monitoring ? 'on' : 'off'}</td>
+          <td class="mono">${d.priceMonthlyUsd == null ? '—' : money(d.priceMonthlyUsd) + '/mo'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+
+      <div class="modal-section-title">Specs &amp; addresses</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Droplet</th><th>Size</th><th>vCPU</th><th>RAM</th><th>Disk</th><th>Public IP</th><th>Private IP</th><th>Image</th><th>Created</th></tr></thead>
+        <tbody>${s.droplets.map(d => `<tr>
+          <td>${escapeHtml(d.name)}</td>
+          <td class="mono">${escapeHtml(d.size || '—')}</td>
+          <td>${d.vcpus ?? '—'}</td>
+          <td>${d.memoryGb == null ? '—' : d.memoryGb + ' GB'}</td>
+          <td>${d.diskGb == null ? '—' : d.diskGb + ' GB'}</td>
+          <td class="mono">${escapeHtml(d.publicIp || '—')}</td>
+          <td class="mono">${escapeHtml(d.privateIp || '—')}</td>
+          <td>${escapeHtml(d.image)}</td>
+          <td>${d.createdAt ? fullDate(d.createdAt) : '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+
+      ${s.droplets.some(d => (d.tags || []).length) ? `
+        <div class="modal-section-title">Tags</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Droplet</th><th>Tags</th></tr></thead>
+          <tbody>${s.droplets.map(d => `<tr>
+            <td>${escapeHtml(d.name)}</td>
+            <td>${(d.tags || []).length ? escapeHtml(d.tags.join(', ')) : '—'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>` : ''}
+    `;
+    document.getElementById('metricModal').classList.remove('hidden');
   }
 
   // ── Compose ──────────────────────────────────────────────────────────────
@@ -1169,6 +1238,7 @@
   // Business metrics. Failure here must never take the user table down with
   // it — an older backend simply has no /api/admin/metrics route.
   let lastMetrics = null; // full /api/admin/metrics response, incl. `details` for drill-downs
+  let lastServiceHealth = null; // full /api/admin/service-health response, for the droplet drill-down
 
   async function loadMetrics() {
     const set = (id, txt) => { document.getElementById(id).textContent = txt; };
