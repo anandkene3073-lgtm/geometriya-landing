@@ -1619,6 +1619,39 @@
     return `<div class="detail-item"><div class="label">${label}</div><div class="value mono">${value}</div></div>`;
   }
 
+  // What an account is actually charged in. The backend derives this from the
+  // phone's country code (12 digits starting 91 = India) and deliberately
+  // ignores IP and timezone, since the India price sits well below the
+  // international one. `billing_currency`, when set, pins it instead — the
+  // only handle there is on an NRI: an Indian number living abroad, quoted
+  // rupees its card may not be able to pay. Mirrors billingCurrencyFor() in
+  // the backend; keep the two in step.
+  function effectiveCurrency(u) {
+    const pinned = u.billing_currency === 'INR' || u.billing_currency === 'USD' ? u.billing_currency : null;
+    const p = String(u.phone || '');
+    const fromPhone = p.length === 12 && p.startsWith('91') ? 'INR' : 'USD';
+    return { currency: pinned || fromPhone, pinned: !!pinned, fromPhone };
+  }
+
+  const currencySymbol = c => (c === 'INR' ? '₹' : '$');
+
+  async function setBillingCurrency(id, currency) {
+    try {
+      await apiCall(`/api/admin/billing-currency/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({ currency }),
+      });
+      showToast(
+        currency ? `Billing pinned to ${currency}.` : 'Billing follows the phone number again.',
+        'success',
+      );
+      closeUserModal();
+      loadUsers();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
   async function openUserDetail(id) {
     const u = [...allUsers.active, ...allUsers.deactivated].find(x => x.id === id);
     if (!u) return;
@@ -1638,6 +1671,10 @@
       detailItem('Trial ends', u.trial_end_date ? fullDate(u.trial_end_date) + ` (${trialStatus})` : '—'),
       detailItem('Logins', loginCountLabel(u)),
       detailItem('Last active', u.last_seen_at ? fullDate(u.last_seen_at) : '—'),
+      detailItem('Billing', (() => {
+        const c = effectiveCurrency(u);
+        return `${currencySymbol(c.currency)} ${c.currency} ${c.pinned ? '(pinned)' : '(from phone)'}`;
+      })()),
       // Fields your backend doesn't send yet — shown so the layout is ready
       // for them, but never invented.
       detailItem('Plan', u.plan || '—'),
@@ -1661,11 +1698,18 @@
       </div>`;
     }
 
+    const cur = effectiveCurrency(u);
     document.getElementById('mActions').innerHTML = `
       ${u.is_active === false
         ? `<button class="btn btn-approve" onclick="activateUser('${u.id}'); closeUserModal();">Reactivate</button>`
         : `<button class="btn btn-reject" onclick="deactivateUser('${u.id}'); closeUserModal();">Deactivate</button>`}
       <button class="btn btn-delete" onclick="deleteUser('${u.id}'); closeUserModal();">Delete</button>
+      <select class="btn" onchange="setBillingCurrency('${u.id}', this.value)"
+              title="Overrides the currency the phone number implies. Applies to the next order.">
+        <option value=""    ${!cur.pinned ? 'selected' : ''}>Bill: from phone (${currencySymbol(cur.fromPhone)} ${cur.fromPhone})</option>
+        <option value="INR" ${u.billing_currency === 'INR' ? 'selected' : ''}>Bill: ₹ INR</option>
+        <option value="USD" ${u.billing_currency === 'USD' ? 'selected' : ''}>Bill: $ USD</option>
+      </select>
       <button class="btn" style="margin-left:auto" onclick="closeUserModal()">Close</button>
     `;
 
