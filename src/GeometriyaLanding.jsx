@@ -529,10 +529,82 @@ function clearReferralCode() {
   try { localStorage.removeItem(REFERRAL_CODE_KEY); } catch { /* nothing to do */ }
 }
 
+// ── Country dialling codes — KEEP IN SYNC with DIAL_CODES in the trading
+// app's Geometriya.jsx (same list, same lengths). The phone number decides an
+// account's billing currency, and until 13-Aug-2026 this form silently
+// truncated any input to 10 digits and refused to submit otherwise — so a
+// South African typing "+27 833880588" watched the field eat his "+" and cut
+// his number short, with the button dead either way (found by exactly that
+// client, the same day the app's own form got its selector). `len` is the
+// national number's digit count where fixed; null = varies, accept 6–15.
+const DIAL_CODES = [
+  { code: '91',  len: 10,   label: 'India (+91)' },
+  { code: '1',   len: 10,   label: 'United States / Canada (+1)' },
+  { code: '44',  len: null, label: 'United Kingdom (+44)' },
+  { code: '971', len: null, label: 'United Arab Emirates (+971)' },
+  { code: '61',  len: 9,    label: 'Australia (+61)' },
+  { code: '973', len: 8,    label: 'Bahrain (+973)' },
+  { code: '880', len: null, label: 'Bangladesh (+880)' },
+  { code: '32',  len: null, label: 'Belgium (+32)' },
+  { code: '55',  len: null, label: 'Brazil (+55)' },
+  { code: '45',  len: 8,    label: 'Denmark (+45)' },
+  { code: '33',  len: 9,    label: 'France (+33)' },
+  { code: '49',  len: null, label: 'Germany (+49)' },
+  { code: '852', len: 8,    label: 'Hong Kong (+852)' },
+  { code: '62',  len: null, label: 'Indonesia (+62)' },
+  { code: '353', len: null, label: 'Ireland (+353)' },
+  { code: '39',  len: null, label: 'Italy (+39)' },
+  { code: '81',  len: null, label: 'Japan (+81)' },
+  { code: '254', len: 9,    label: 'Kenya (+254)' },
+  { code: '965', len: 8,    label: 'Kuwait (+965)' },
+  { code: '60',  len: null, label: 'Malaysia (+60)' },
+  { code: '230', len: 8,    label: 'Mauritius (+230)' },
+  { code: '52',  len: 10,   label: 'Mexico (+52)' },
+  { code: '977', len: 10,   label: 'Nepal (+977)' },
+  { code: '31',  len: 9,    label: 'Netherlands (+31)' },
+  { code: '64',  len: null, label: 'New Zealand (+64)' },
+  { code: '234', len: 10,   label: 'Nigeria (+234)' },
+  { code: '47',  len: 8,    label: 'Norway (+47)' },
+  { code: '968', len: 8,    label: 'Oman (+968)' },
+  { code: '92',  len: 10,   label: 'Pakistan (+92)' },
+  { code: '63',  len: 10,   label: 'Philippines (+63)' },
+  { code: '48',  len: 9,    label: 'Poland (+48)' },
+  { code: '351', len: 9,    label: 'Portugal (+351)' },
+  { code: '974', len: 8,    label: 'Qatar (+974)' },
+  { code: '966', len: 9,    label: 'Saudi Arabia (+966)' },
+  { code: '65',  len: 8,    label: 'Singapore (+65)' },
+  { code: '27',  len: 9,    label: 'South Africa (+27)' },
+  { code: '34',  len: 9,    label: 'Spain (+34)' },
+  { code: '94',  len: 9,    label: 'Sri Lanka (+94)' },
+  { code: '46',  len: null, label: 'Sweden (+46)' },
+  { code: '41',  len: 9,    label: 'Switzerland (+41)' },
+  { code: '66',  len: null, label: 'Thailand (+66)' },
+  { code: '90',  len: 10,   label: 'Turkey (+90)' },
+  { code: '84',  len: null, label: 'Vietnam (+84)' },
+];
+const dialEntryFor = (code) => DIAL_CODES.find(c => c.code === code) || DIAL_CODES[0];
+// Is this national number complete for its country? Fixed-length countries
+// demand exactly that; the rest get the E.164-ish 6–15 range.
+const nationalNumberOk = (code, local) => {
+  const len = dialEntryFor(code).len;
+  return len ? local.length === len : local.length >= 6 && local.length <= 15;
+};
+
 function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [step, setStep] = useState('details'); // details | otp | success | already_registered
   const [name, setName] = useState('');
+  // `phone` stays the FULL international number — every call below (signup,
+  // the 409→login fallback, verify-otp, create-order) already sends it.
+  // The two controls compose it; India default matches the old behaviour.
   const [phone, setPhone] = useState('');
+  const [dialCode, setDialCode] = useState('91');
+  const [phoneLocal, setPhoneLocal] = useState('');
+  const applyPhoneParts = (dial, local) => {
+    const digits = String(local).replace(/\D/g, '').slice(0, 15);
+    setDialCode(dial);
+    setPhoneLocal(digits);
+    setPhone(digits ? dial + digits : '');
+  };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState(''); // re-type
@@ -803,12 +875,20 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         onChange={(e) => setName(e.target.value)}
         style={inputStyle}
       />
+      <select
+        value={dialCode}
+        onChange={(e) => applyPhoneParts(e.target.value, phoneLocal)}
+        aria-label="Country code"
+        style={{ ...inputStyle, minWidth: 150 }}
+      >
+        {DIAL_CODES.map(c => <option key={c.label} value={c.code}>{c.label}</option>)}
+      </select>
       <input
         type="tel"
         required
-        placeholder="10-digit mobile number"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+        placeholder={dialEntryFor(dialCode).len ? `${dialEntryFor(dialCode).len}-digit mobile number` : 'Mobile number'}
+        value={phoneLocal}
+        onChange={(e) => applyPhoneParts(dialCode, e.target.value)}
         style={inputStyle}
       />
       <input
@@ -835,13 +915,21 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         onChange={(e) => setPassword2(e.target.value)}
         style={{ ...inputStyle, minWidth: 220 }}
       />
+      {/* Disabled until the NATIONAL number is complete for the chosen
+          country — the old phone.length !== 10 gate is what left a +27
+          client with a dead button no matter what he typed. */}
       <button
         type="submit"
-        disabled={status === 'loading' || phone.length !== 10 || !name || !email || !password || !password2}
-        style={buttonStyle(status === 'loading' || phone.length !== 10 || !name || !email || !password || !password2)}
+        disabled={status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2}
+        style={buttonStyle(status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2)}
       >
         {status === 'loading' ? 'Sending…' : 'Get Early Access'}
       </button>
+      {dialCode !== '91' && (
+        <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
+          Enter your number without the +{dialCode}. International accounts are billed in $.
+        </div>
+      )}
       <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
         We&rsquo;ll send a verification code to your email to confirm your account.
       </div>
@@ -869,7 +957,10 @@ function SubscriptionCheckModal({ open, onClose }) {
 
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, '');
-    if (digits.length < 10) { setError('Enter a valid 10-digit mobile number'); return; }
+    // 8–15, not "exactly 10": international numbers vary, and the backend
+    // resolves national forms (with or without a trunk zero) by unique
+    // suffix, same as sign-in. Indian users still just type their 10 digits.
+    if (digits.length < 8 || digits.length > 15) { setError('Enter a valid mobile number (add your country code if outside India)'); return; }
     setLoading(true); setError('');
     try {
       const res = await fetch(`${API_BASE_URL}/api/subscription-check/send-otp`, {
@@ -878,6 +969,9 @@ function SubscriptionCheckModal({ open, onClose }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not send code');
+      // The OTP is stored under the account's CANONICAL phone — verify must
+      // echo that back, not whatever form the user happened to type.
+      if (data.phone) setPhone(data.phone);
       setDevOtpHint(data.devMode ? '(dev mode — check server console for the code)' : '');
       setStep('otp');
     } catch (e) {
@@ -916,8 +1010,8 @@ function SubscriptionCheckModal({ open, onClose }) {
 
         {step === 'phone' && (
           <>
-            <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Enter your registered mobile number — we'll text/email you a one-time code.</div>
-            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="10-digit mobile number" style={inputStyle} />
+            <div style={{ fontSize: 12, color: RD.inkDim, marginBottom: 10 }}>Enter your registered mobile number (with country code if outside India) — we'll email you a one-time code.</div>
+            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile number, e.g. 98765 43210 or +27 83 388 0588" style={inputStyle} />
             <button disabled={loading} onClick={sendOtp} style={btnStyle}>{loading ? 'Sending…' : 'Send code'}</button>
           </>
         )}
