@@ -526,6 +526,35 @@
     border-top: 1px solid var(--border);
   }
 
+  /* Subscription editor. The read-out is deliberately loud — every control
+     under it changes what the customer has paid for, so what they have RIGHT
+     NOW should be impossible to misread before you touch anything. */
+  .sub-state {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    padding: 12px 14px; margin-bottom: 12px;
+    border: 1px solid var(--border); border-left-width: 3px; border-radius: 8px;
+    background: var(--panel-2);
+  }
+  .sub-state.is-paid    { border-left-color: var(--green); }
+  .sub-state.is-soon    { border-left-color: var(--amber); }
+  .sub-state.is-lapsed  { border-left-color: var(--red); }
+  .sub-state.is-none    { border-left-color: var(--border); }
+  .sub-state .date { font-size: 15px; font-weight: 600; }
+  .sub-state .left { font-size: 13px; font-weight: 600; }
+  .sub-state .note { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  .sub-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sub-controls .sep {
+    width: 1px; align-self: stretch; background: var(--border); margin: 0 4px;
+  }
+  .sub-controls input[type="date"] {
+    padding: 7px 10px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); font-family: inherit; font-size: 13px;
+  }
+  .sub-controls input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+  .sub-hint { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
   .payment-row {
     display: flex;
     justify-content: space-between;
@@ -890,6 +919,9 @@
       </div>
       <div class="modal-body">
         <div class="detail-grid" id="mDetailGrid"></div>
+
+        <div class="modal-section-title">Subscription</div>
+        <div id="mSubscription"></div>
 
         <div class="modal-section-title">Payment history</div>
         <div id="mPayments"></div>
@@ -1722,6 +1754,105 @@
     }
   }
 
+  // ── Subscription: read the state, then let it be adjusted ──
+  // Paid-through is the single field that decides whether an account is a
+  // customer or a trial. Everything below treats it as such: read it loudly,
+  // change it only on an explicit confirm, and always say what it WAS.
+
+  function subState(u) {
+    const end = u.subscription_end_date ? new Date(u.subscription_end_date) : null;
+    if (!end || Number.isNaN(end.getTime())) {
+      return { cls: 'is-none', end: null, days: null, label: 'No subscription', left: 'on trial or unpaid' };
+    }
+    const days = Math.ceil((end - Date.now()) / 86400000);
+    if (days < 0)  return { cls: 'is-lapsed', end, days, label: 'Lapsed',  left: `${Math.abs(days)}d ago` };
+    if (days <= 14) return { cls: 'is-soon',  end, days, label: 'Expiring', left: `${days}d left` };
+    return { cls: 'is-paid', end, days, label: 'Active', left: `${days}d left` };
+  }
+
+  // The date input wants YYYY-MM-DD in the ADMIN's local day, not UTC — an
+  // ISO slice would show the previous day for anything before 05:30 IST.
+  function dateInputValue(d) {
+    if (!d) return '';
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  // The confirm text is composed HERE, from the live row, rather than baked
+  // into each button's onclick. That keeps a customer's name — which can hold
+  // quotes, an apostrophe, anything — out of an HTML attribute that also has
+  // to survive being parsed as JavaScript. It also means the prompt always
+  // quotes the CURRENT date, not whatever was rendered.
+  async function setSubscription(id, payload) {
+    const u = [...allUsers.active, ...allUsers.deactivated].find(x => x.id === id);
+    if (!u) return;
+    const s = subState(u);
+    const who = u.name || formatPhone(u.phone) || 'this account';
+    const nowText = s.end ? `Currently paid through ${fullDate(s.end)} (${s.left}).` : 'Currently has no subscription.';
+
+    let what;
+    if (payload.clear) what = `Remove ${who}'s subscription entirely? They drop back to trial and lose paid access.`;
+    else if (payload.date) what = `Set ${who}'s subscription to end on ${payload.date} (end of that day)?`;
+    else if (payload.days > 0) what = `Give ${who} ${payload.days} more day${payload.days === 1 ? '' : 's'}, counted from ${s.days > 0 ? 'the current end date' : 'today'}?`;
+    else what = `Take ${Math.abs(payload.days)} days OFF ${who}'s subscription?`;
+
+    if (!confirm(`${what}\n\n${nowText}`)) return;
+    try {
+      const r = await apiCall(`/api/admin/subscription/${id}`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const now = r.user?.subscription_end_date;
+      showToast(
+        now ? `Paid through ${fullDate(now)}.` : 'Subscription cleared — account is back on trial.',
+        'success',
+      );
+      // Refresh the list, then re-render this modal from the fresh row so the
+      // new date is visible without hunting for the user again.
+      await loadUsers();
+      openUserDetail(id);
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  function applySubDate(id) {
+    const v = document.getElementById('subDate_' + id)?.value;
+    if (!v) { showToast('Pick a date first.', 'error'); return; }
+    setSubscription(id, { date: v });
+  }
+
+  function renderSubscription(u) {
+    const s = subState(u);
+    const el = document.getElementById('mSubscription');
+    if (!el) return;
+    const q = (n, label) =>
+      `<button class="btn" onclick="setSubscription('${u.id}', {days:${n}})">+${label}</button>`;
+
+    el.innerHTML = `
+      <div class="sub-state ${s.cls}">
+        <span class="date">${s.end ? fullDate(s.end) : '—'}</span>
+        <span class="left" style="color:var(${s.cls === 'is-paid' ? '--green' : s.cls === 'is-soon' ? '--amber' : s.cls === 'is-lapsed' ? '--red' : '--muted'})">
+          ${s.label}${s.end ? ' · ' + s.left : ''}
+        </span>
+        <span class="note">${u.plan ? u.plan + ' plan' : 'no plan recorded'}</span>
+      </div>
+      <div class="sub-controls">
+        ${q(7, '7d')} ${q(30, '1 month')} ${q(90, '3 months')} ${q(365, '1 year')}
+        <span class="sep"></span>
+        <input type="date" id="subDate_${u.id}" value="${dateInputValue(s.end)}">
+        <button class="btn btn-accent" onclick="applySubDate('${u.id}')">Set date</button>
+        <span class="sep"></span>
+        <button class="btn" onclick="setSubscription('${u.id}', {days:-30})">−1 month</button>
+        <button class="btn btn-delete" onclick="setSubscription('${u.id}', {clear:true})">Clear</button>
+      </div>
+      <div class="sub-hint">
+        Added days count from ${s.days > 0 ? 'the current end date, so nothing already paid for is lost' : 'today, since the account is not currently paid'}.
+        A set date runs to the end of that day (23:59 IST).
+      </div>
+    `;
+  }
+
   async function openUserDetail(id) {
     const u = [...allUsers.active, ...allUsers.deactivated].find(x => x.id === id);
     if (!u) return;
@@ -1739,6 +1870,10 @@
       detailItem('User ID', u.id),
       detailItem('Joined', fullDate(u.created_at)),
       detailItem('Trial ends', u.trial_end_date ? fullDate(u.trial_end_date) + ` (${trialStatus})` : '—'),
+      detailItem('Paid through', (() => {
+        const s = subState(u);
+        return s.end ? fullDate(s.end) + ` (${s.left})` : '—';
+      })()),
       detailItem('Logins', loginCountLabel(u)),
       detailItem('Last active', u.last_seen_at ? fullDate(u.last_seen_at) : '—'),
       detailItem('Billing', (() => {
@@ -1750,6 +1885,8 @@
       detailItem('Plan', u.plan || '—'),
       detailItem('Signup source', u.signup_source || '—'),
     ].join('');
+
+    renderSubscription(u);
 
     const paymentsEl = document.getElementById('mPayments');
     if (Array.isArray(u.payments) && u.payments.length) {
