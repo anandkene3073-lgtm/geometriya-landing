@@ -716,6 +716,7 @@
         <span class="section-sub mono" id="serviceHealthStamp">—</span>
       </div>
       <div id="sec-service-health">
+        <div id="totalCostCard" style="margin-bottom: 16px;"></div>
         <div class="stats" id="serviceHealthGrid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 28px;">
           <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
         </div>
@@ -1070,6 +1071,62 @@
     ok: 'OK', warning: 'Warning', critical: 'Critical',
     unconfigured: 'Not set up', error: 'Error',
   };
+  // Total project cost — see computeTotalCost() in server.js for the full
+  // reasoning. Short version: DigitalOcean is the only provider here with a
+  // real billing API, so its line is marked 'api'; everything else (Render,
+  // the domain, MSG91 top-ups, ...) is entered by hand via
+  // PROJECT_MONTHLY_COSTS_JSON and marked 'manual' — shown with a visibly
+  // different badge so a live number is never mistaken for a guess, or vice
+  // versa. USD and INR totals are kept separate rather than blended at some
+  // FX rate that goes stale the moment it's written.
+  function renderTotalCost(tc) {
+    const el = document.getElementById('totalCostCard');
+    if (!el) return;
+    if (!tc || (!tc.configured && !tc.manualError)) {
+      el.innerHTML = `
+        <div class="stat" style="grid-column: 1 / -1;">
+          <div class="stat-label">Total monthly cost</div>
+          <div class="stat-value thin" style="color:var(--muted);font-size:15px;">Not set up</div>
+          <div class="stat-foot">DigitalOcean's droplet cost will appear automatically once <span class="mono">DIGITALOCEAN_TOKEN</span> is set.
+            Add anything else — Render, the domain, MSG91 top-ups — via <span class="mono">PROJECT_MONTHLY_COSTS_JSON</span> on the backend
+            (an array of <span class="mono">{name, amount, currency, period}</span>).</div>
+        </div>`;
+      return;
+    }
+    const money = (n, c) => (c === 'INR' ? '₹' : '$') + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const totals = [
+      tc.totalUsdMonthly > 0 ? money(tc.totalUsdMonthly, 'USD') + '/mo' : null,
+      tc.totalInrMonthly > 0 ? money(tc.totalInrMonthly, 'INR') + '/mo' : null,
+    ].filter(Boolean).join('  +  ') || '$0.00/mo';
+
+    const rows = tc.lines.map(l => `
+      <tr>
+        <td>${escapeHtml(l.name)}</td>
+        <td class="mono">${money(l.amount, l.currency)}${l.period === 'yearly' ? '/yr' : '/mo'}</td>
+        <td class="mono">${l.period === 'yearly' ? money(l.monthlyAmount, l.currency) + '/mo' : '—'}</td>
+        <td><span style="font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;letter-spacing:.02em;
+              background:${l.source === 'api' ? 'var(--green-bg)' : 'var(--panel-2)'};
+              color:${l.source === 'api' ? 'var(--green)' : 'var(--muted)'};
+              border:1px solid ${l.source === 'api' ? 'var(--green)' : 'var(--border)'};">
+              ${l.source === 'api' ? 'LIVE' : 'MANUAL'}</span></td>
+        <td style="color:var(--muted);font-size:11px;">${escapeHtml(l.note || '—')}</td>
+      </tr>`).join('');
+
+    el.innerHTML = `
+      <div class="stat" style="grid-column: 1 / -1;">
+        <div class="stat-label">Total monthly cost</div>
+        <div class="stat-value thin" style="font-size:22px;">${totals}</div>
+        <div class="stat-foot">${tc.lines.length} cost${tc.lines.length === 1 ? '' : 's'} tracked
+          ${tc.manualError ? ` · <span style="color:var(--red)">${escapeHtml(tc.manualError)}</span>` : ''}</div>
+        <div class="table-wrap" style="margin-top:12px;">
+          <table>
+            <thead><tr><th>Service</th><th>Billed as</th><th>Monthly equiv.</th><th>Source</th><th>Note</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
   async function loadServiceHealth() {
     const grid = document.getElementById('serviceHealthGrid');
     try {
@@ -1077,6 +1134,7 @@
       lastServiceHealth = data;
       document.getElementById('serviceHealthStamp').textContent =
         'checked ' + new Date(data.checkedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      renderTotalCost(data.totalCost);
       grid.innerHTML = (data.services || []).map((s, i) => {
         const col = SERVICE_HEALTH_COLORS[s.status] || 'var(--muted)';
         const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
