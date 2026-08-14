@@ -1099,10 +1099,16 @@
       tc.totalInrMonthly > 0 ? money(tc.totalInrMonthly, 'INR') + '/mo' : null,
     ].filter(Boolean).join('  +  ') || '$0.00/mo';
 
+    // A one-time cost (a Play Console registration, say) has no recurring
+    // rate — 'billed as' says so plainly and 'monthly equiv.' stays '—'
+    // rather than implying it repeats every month like the yearly-amortized
+    // rows just above it.
+    const billedAs = l => l.period === 'once' ? money(l.amount, l.currency) + ' (one-time)'
+      : l.period === 'yearly' ? money(l.amount, l.currency) + '/yr' : money(l.amount, l.currency) + '/mo';
     const rows = tc.lines.map(l => `
-      <tr>
+      <tr${l.period === 'once' ? ' style="opacity:.75"' : ''}>
         <td>${escapeHtml(l.name)}</td>
-        <td class="mono">${money(l.amount, l.currency)}${l.period === 'yearly' ? '/yr' : '/mo'}</td>
+        <td class="mono">${billedAs(l)}</td>
         <td class="mono">${l.period === 'yearly' ? money(l.monthlyAmount, l.currency) + '/mo' : '—'}</td>
         <td><span style="font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;letter-spacing:.02em;
               background:${l.source === 'api' ? 'var(--green-bg)' : 'var(--panel-2)'};
@@ -1112,11 +1118,17 @@
         <td style="color:var(--muted);font-size:11px;">${escapeHtml(l.note || '—')}</td>
       </tr>`).join('');
 
+    const oneTimeTotal = [
+      tc.oneTimeUsd > 0 ? money(tc.oneTimeUsd, 'USD') : null,
+      tc.oneTimeInr > 0 ? money(tc.oneTimeInr, 'INR') : null,
+    ].filter(Boolean).join(' + ');
+
     el.innerHTML = `
       <div class="stat" style="grid-column: 1 / -1;">
         <div class="stat-label">Total monthly cost</div>
         <div class="stat-value thin" style="font-size:22px;">${totals}</div>
         <div class="stat-foot">${tc.lines.length} cost${tc.lines.length === 1 ? '' : 's'} tracked
+          ${oneTimeTotal ? ` · ${oneTimeTotal} paid one-time (not part of the monthly rate)` : ''}
           ${tc.manualError ? ` · <span style="color:var(--red)">${escapeHtml(tc.manualError)}</span>` : ''}</div>
         <div class="table-wrap" style="margin-top:12px;">
           <table>
