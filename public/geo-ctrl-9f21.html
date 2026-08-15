@@ -1170,7 +1170,8 @@
         const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
         // A service that ships a droplet list has more to say than fits in a
         // tile foot, so it becomes clickable and opens the full inventory.
-        const drillable = Array.isArray(s.droplets) && s.droplets.length;
+        // Services with more to say than fits in a tile foot become clickable.
+        const drillable = (Array.isArray(s.droplets) && s.droplets.length) || !!s.byPrefix;
         return `
           <div class="stat${drillable ? ' stat-clickable' : ''}"${drillable ? ` onclick="openServiceDetail(${i})"` : ''}
                style="border-color:${s.status === 'critical' || s.status === 'error' ? col : 'var(--border)'}">
@@ -1192,9 +1193,92 @@
   // tables on purpose: identity/state is what you look at during an incident,
   // and specs/addresses is what you look at when planning or connecting —
   // one fourteen-column table serves neither.
+  // Cloudflare R2 — the deep-history archive behind MAX-range charts.
+  // Separated from the droplet view because the questions are different:
+  // for droplets you ask "is it up and what does it cost", for an archive
+  // you ask "is the data all there, and is the cache in front of it working".
+  function openR2Detail(s) {
+    const mb = b => (Number(b || 0) / 1048576).toFixed(1) + ' MB';
+    const c = s.cache || {};
+    const pctFree = s.bytes && s.freeTierGb ? ((s.bytes / (s.freeTierGb * 1073741824)) * 100) : 0;
+    const PREFIX_LABEL = {
+      eq: 'Equities (live + delisted)',
+      idx: 'Indices',
+      'eq-dead': 'Equities — delisted',
+      'idx-dead': 'Indices — retired',
+    };
+
+    document.getElementById('metricTitle').textContent = s.name;
+    document.getElementById('metricSub').textContent =
+      [s.bucket, `${(s.objects || 0).toLocaleString()} objects`, mb(s.bytes)].filter(Boolean).join('  ·  ');
+
+    document.getElementById('metricBody').innerHTML = `
+      <div class="placeholder-note" style="margin-bottom:18px;">
+        Holds one gzipped file per symbol covering <b>1994 → Aug 2024</b>. The backend fetches these on demand and
+        splices them <i>under</i> the rolling window in Supabase, which is what lets a chart show 30+ years when
+        MAX is pressed. If this bucket is unreachable, charts silently fall back to roughly the last two years —
+        shorter, never broken.
+      </div>
+
+      <div class="modal-section-title" style="padding-top:0;border-top:none;">Storage</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Contents</th><th>Objects</th><th>Size</th></tr></thead>
+        <tbody>
+          ${Object.entries(s.byPrefix || {}).sort((a, b) => b[1].bytes - a[1].bytes).map(([p, v]) => `<tr>
+            <td>${escapeHtml(PREFIX_LABEL[p] || p)}</td>
+            <td class="mono">${v.objects.toLocaleString()}</td>
+            <td class="mono">${mb(v.bytes)}</td>
+          </tr>`).join('')}
+          <tr style="font-weight:600;">
+            <td>Total</td><td class="mono">${(s.objects || 0).toLocaleString()}</td><td class="mono">${mb(s.bytes)}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted)">Free tier allowance</td>
+            <td class="mono" style="color:var(--muted)">—</td>
+            <td class="mono" style="color:${pctFree >= 75 ? 'var(--amber)' : 'var(--green)'}">
+              ${s.freeTierGb} GB &nbsp;(${pctFree < 1 ? '<1' : Math.round(pctFree)}% used)
+            </td>
+          </tr>
+        </tbody>
+      </table></div>
+
+      <div class="modal-section-title">In-memory cache</div>
+      <div class="placeholder-note" style="margin-bottom:12px;">
+        Archive files never change, so the backend keeps recently-read symbols in memory as gzipped buffers.
+        A low hit rate means the cache is too small for how many different symbols people chart — every miss is a
+        round-trip to Cloudflare while someone waits for a chart.
+      </div>
+      <div class="table-wrap"><table>
+        <tbody>
+          <tr><td>Symbols cached</td><td class="mono">${c.cachedSymbols ?? '—'} / ${c.cacheMax ?? '—'}</td></tr>
+          <tr><td>Memory held</td><td class="mono">${mb(c.cachedBytes)}</td></tr>
+          <tr><td>Hit rate</td><td class="mono" style="color:${c.hitRatePct == null ? 'var(--muted)' : c.hitRatePct >= 60 ? 'var(--green)' : 'var(--amber)'}">
+            ${c.hitRatePct == null ? 'no lookups since restart' : c.hitRatePct + '%'}</td></tr>
+          <tr><td>Served from cache</td><td class="mono">${c.hits ?? 0}</td></tr>
+          <tr><td>Fetched from R2</td><td class="mono">${c.fetches ?? 0} (${mb(c.bytesFetched)})</td></tr>
+          <tr><td>Symbols with no archive</td><td class="mono">${c.knownMissing ?? 0}</td></tr>
+          <tr><td>Fetch errors</td><td class="mono" style="color:${(c.errors || 0) > 0 ? 'var(--red)' : 'inherit'}">${c.errors ?? 0}</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="modal-section-title">Connection</div>
+      <div class="table-wrap"><table>
+        <tbody>
+          <tr><td>Bucket</td><td class="mono">${escapeHtml(s.bucket || '—')}</td></tr>
+          <tr><td>Endpoint</td><td class="mono">${escapeHtml(s.endpoint || '—')}</td></tr>
+          <tr><td>Newest object</td><td class="mono">${s.newestObject ? fullDate(s.newestObject) : '—'}</td></tr>
+          <tr><td>Inventory counted</td><td class="mono">${s.listedAt ? fullDate(s.listedAt) : '—'} <span style="color:var(--muted)">(cached 10 min)</span></td></tr>
+        </tbody>
+      </table></div>
+    `;
+    document.getElementById('metricModal').classList.remove('hidden');
+  }
+
   function openServiceDetail(index) {
     const s = ((lastServiceHealth || {}).services || [])[index];
-    if (!s || !Array.isArray(s.droplets)) return;
+    if (!s) return;
+    if (s.byPrefix) return openR2Detail(s);
+    if (!Array.isArray(s.droplets)) return;
     const money = n => '$' + Number(n || 0).toFixed(2);
     const dot = st => ({ active: 'var(--green)', off: 'var(--red)', new: 'var(--amber)' }[st] || 'var(--muted)');
 
