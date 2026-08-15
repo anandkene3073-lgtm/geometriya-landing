@@ -1061,13 +1061,31 @@ function SubscriptionCheckModal({ open, onClose }) {
 const INSTALL_DISMISS_KEY = 'geo_siteInstallDismissedAt';
 const INSTALL_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
+// iPhone and iPad have no App Store listing and Safari never fires
+// beforeinstallprompt, so on iOS the only install route is Share → Add to
+// Home Screen. Sending an iOS visitor to the app with ?install=1 just moves
+// the confusion behind a login form — a South African client spent days
+// searching the App Store, found nothing, and concluded his paid account was
+// broken. So iOS gets the answer HERE, inline, before anyone taps anything.
+// Detects iPad-on-iPadOS too, which reports itself as a Mac and is only
+// distinguishable by having a touchscreen.
+const isIosDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua)
+    || (/Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document);
+};
+
 function InstallAppStrip() {
   const [show, setShow] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [showIosSteps, setShowIosSteps] = useState(false);
   useEffect(() => {
     // Already opened as an installed app? Then there's nothing to advertise.
     const standalone = window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
     if (standalone) return;
+    setIsIos(isIosDevice());
     let dismissedAt = 0;
     try { dismissedAt = Number(localStorage.getItem(INSTALL_DISMISS_KEY)) || 0; } catch { /* private mode */ }
     if (Date.now() - dismissedAt < INSTALL_COOLDOWN_MS) return;
@@ -1079,20 +1097,40 @@ function InstallAppStrip() {
   };
   if (!show) return null;
   return (
-    <div className="geo-install-strip">
-      <img src="/logo.svg" alt="" width="30" height="30" style={{ flexShrink: 0, borderRadius: 7 }} />
-      {/* Truncates rather than wrapping — on a 320px screen the subtitle would
-          otherwise push the strip to three lines and eat the viewport. */}
-      <div style={{ flex: 1, minWidth: 0, lineHeight: 1.3, whiteSpace: 'nowrap' }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: RD.ink, overflow: 'hidden', textOverflow: 'ellipsis' }}>Get the Geometriya app</div>
-        <div style={{ fontSize: 11.5, color: RD.inkDim, overflow: 'hidden', textOverflow: 'ellipsis' }}>Charts on your home screen — free</div>
+    <div style={{ borderBottom: `1px solid ${C.line}` }}>
+      <div className="geo-install-strip" style={{ borderBottom: 'none' }}>
+        <img src="/logo.svg" alt="" width="30" height="30" style={{ flexShrink: 0, borderRadius: 7 }} />
+        {/* Truncates rather than wrapping — on a 320px screen the subtitle would
+            otherwise push the strip to three lines and eat the viewport. */}
+        <div style={{ flex: 1, minWidth: 0, lineHeight: 1.3, whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: RD.ink, overflow: 'hidden', textOverflow: 'ellipsis' }}>Get the Geometriya app</div>
+          <div style={{ fontSize: 11.5, color: RD.inkDim, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {isIos ? 'Add it from Safari — not in the App Store' : 'Charts on your home screen — free'}
+          </div>
+        </div>
+        {isIos ? (
+          <button onClick={() => setShowIosSteps(v => !v)}
+            style={{ flexShrink: 0, background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 13, padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer' }}>
+            {showIosSteps ? 'Hide' : 'How to'}
+          </button>
+        ) : (
+          <a href={`${APP_URL}/?install=1`}
+            style={{ flexShrink: 0, background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 13, padding: '8px 16px', borderRadius: 6, textDecoration: 'none' }}>
+            Install
+          </a>
+        )}
+        <button onClick={dismiss} aria-label="Dismiss"
+          style={{ flexShrink: 0, background: 'transparent', border: 'none', color: RD.inkDim, fontSize: 18, lineHeight: 1, padding: '0 2px', cursor: 'pointer' }}>×</button>
       </div>
-      <a href={`${APP_URL}/?install=1`}
-        style={{ flexShrink: 0, background: RD.blue, color: '#fff', fontWeight: 600, fontSize: 13, padding: '8px 16px', borderRadius: 6, textDecoration: 'none' }}>
-        Install
-      </a>
-      <button onClick={dismiss} aria-label="Dismiss"
-        style={{ flexShrink: 0, background: 'transparent', border: 'none', color: RD.inkDim, fontSize: 18, lineHeight: 1, padding: '0 2px', cursor: 'pointer' }}>×</button>
+      {isIos && showIosSteps && (
+        <div style={{ padding: '2px 14px 12px', fontSize: 12.5, lineHeight: 1.75, color: RD.inkDim, background: 'rgba(79,127,255,.09)' }}>
+          <div style={{ marginBottom: 4 }}>There&rsquo;s no App Store listing yet — install it straight from Safari:</div>
+          <div>1. Make sure you&rsquo;re in <b style={{ color: RD.ink }}>Safari</b> (Chrome on iPhone can&rsquo;t do this)</div>
+          <div>2. Tap the <b style={{ color: RD.ink }}>Share</b> button <span style={{ fontFamily: 'monospace' }}>□↑</span></div>
+          <div>3. Scroll down and tap <b style={{ color: RD.ink }}>Add to Home Screen</b></div>
+          <div style={{ marginTop: 6 }}>It opens full-screen, exactly like an app.</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1444,6 +1482,24 @@ export default function GeometriyaLanding() {
           </div>
           <div style={{ fontSize: 14.5, lineHeight: 1.7, color: RD.inkDim }}>
             You&rsquo;re automatically moved to our Starter plan — no action needed, nothing lost. You keep full access to all geometry tools and Mitotic Scaling on 20 hand-picked large-cap stocks (plus NIFTY&nbsp;50 &amp; BANKNIFTY), for as long as you like. Upgrade to Full Access anytime for unlimited scrips.
+          </div>
+
+          {/* Answered here because the alternative is someone searching the App
+              Store, finding nothing, and assuming the product is broken —
+              which is exactly what happened to a paying client. */}
+          <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 26, paddingTop: 26 }}>
+            <div style={{ fontSize: 16.5, fontWeight: 600, color: RD.ink, marginBottom: 12 }}>
+              Is there an iPhone or Android app?
+            </div>
+            <div style={{ fontSize: 14.5, lineHeight: 1.7, color: RD.inkDim }}>
+              Yes — Geometriya installs to your home screen and runs full-screen like any other app, on both.
+              <div style={{ marginTop: 12 }}>
+                <b style={{ color: RD.ink }}>Android:</b> open <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13.5 }}>app.geometricalanalysis.com</span> in Chrome and tap <b style={{ color: RD.ink }}>⋮</b> → <b style={{ color: RD.ink }}>Install app</b>.
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <b style={{ color: RD.ink }}>iPhone / iPad:</b> there&rsquo;s no App&nbsp;Store listing yet, so install it from <b style={{ color: RD.ink }}>Safari</b> instead — tap <b style={{ color: RD.ink }}>Share</b> <span style={{ fontFamily: 'monospace' }}>□↑</span> → <b style={{ color: RD.ink }}>Add to Home Screen</b>. It must be Safari; Chrome on iPhone can&rsquo;t add home-screen apps.
+              </div>
+            </div>
           </div>
         </div>
       </section>
