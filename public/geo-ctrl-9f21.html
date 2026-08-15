@@ -878,12 +878,29 @@
           <div style="flex:1; min-width:220px;">
             <label for="bcAudience">Audience</label>
             <select id="bcAudience" onchange="updateBcCount()">
-              <option value="all">Everyone</option>
-              <option value="approved">Approved</option>
-              <option value="in_trial">In trial</option>
-              <option value="paying">Paying</option>
-              <option value="free_tier">Free tier (trial lapsed)</option>
-              <option value="pending_approval">Pending approval</option>
+              <optgroup label="Geometriya accounts">
+                <option value="all">Everyone</option>
+                <option value="approved">Approved</option>
+                <option value="in_trial">In trial</option>
+                <option value="paying">Paying</option>
+                <option value="free_tier">Free tier (trial lapsed)</option>
+                <option value="pending_approval">Pending approval</option>
+              </optgroup>
+              <!-- Imported lists are appended here by loadContactLists() -->
+              <optgroup label="Imported lists" id="bcListGroup" style="display:none"></optgroup>
+            </select>
+          </div>
+          <!-- Batch size only applies to imported lists: an old list carries
+               dead addresses, and hard bounces from a young sending domain
+               are what actually cost deliverability. Sending 25 at a time
+               surfaces that while it is still 25 addresses wide. -->
+          <div id="bcBatchWrap" style="flex:0 0 128px; display:none;">
+            <label for="bcBatch">Batch size</label>
+            <select id="bcBatch" onchange="updateBcCount()">
+              <option value="25">25 (safest)</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">All remaining</option>
             </select>
           </div>
           <div style="flex:2; min-width:260px;">
@@ -1051,6 +1068,7 @@
       document.getElementById('statDeactivated').textContent = allUsers.deactivated.length;
       document.getElementById('statTotal').textContent = data.users.length;
       renderTable();
+      await loadContactLists();   // before updateBcCount — it reads the list counts
       updateBcCount();
       loadMetrics();
       loadServiceHealth();
@@ -1258,8 +1276,41 @@
   const RESERVED_TEST_EMAIL_DOMAINS = new Set(['example.com', 'example.net', 'example.org', 'example.edu', 'test.com', 'invalid']);
   const isReservedTestEmail = (email) => RESERVED_TEST_EMAIL_DOMAINS.has(email.split('@')[1] || '');
 
+  // Imported contact lists (marketing_contacts), keyed by source. Populated
+  // from the server so adding a list is an import, not a UI change.
+  let contactLists = [];
+  const isListAudience = a => a.startsWith('list:');
+
+  async function loadContactLists() {
+    try {
+      const d = await apiCall('/api/admin/contact-lists');
+      contactLists = d.lists || [];
+      const group = document.getElementById('bcListGroup');
+      if (!contactLists.length) { group.style.display = 'none'; return; }
+      group.style.display = '';
+      // "75 left of 97" is the number that matters mid-campaign — how many
+      // have never been emailed, not the list's total size.
+      group.innerHTML = contactLists.map(l => {
+        const label = l.source.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        return `<option value="list:${escapeHtml(l.source)}">${escapeHtml(label)} — ${l.pending} left of ${l.total}</option>`;
+      }).join('');
+    } catch (e) {
+      console.warn('contact lists unavailable:', e.message);
+    }
+  }
+
   function bcRecipients() {
     const audience = document.getElementById('bcAudience').value;
+    if (isListAudience(audience)) {
+      const src = audience.slice(5);
+      const list = contactLists.find(l => l.source === src);
+      if (!list) return 0;
+      const batch = Number(document.getElementById('bcBatch').value) || 25;
+      // An estimate, not a promise: the server also drops anyone who has
+      // unsubscribed or already holds an account. The confirm dialog says so,
+      // and the result line reports what actually went.
+      return Math.min(batch, list.pending);
+    }
     const seen = new Set();
     let n = 0;
     for (const u of rawUsers) {
@@ -1274,9 +1325,14 @@
   }
 
   function updateBcCount() {
+    const audience = document.getElementById('bcAudience').value;
+    const isList = isListAudience(audience);
+    document.getElementById('bcBatchWrap').style.display = isList ? '' : 'none';
     const n = bcRecipients();
     const btn = document.getElementById('bcSendBtn');
-    btn.textContent = `Send to ${n} client${n === 1 ? '' : 's'}`;
+    btn.textContent = isList
+      ? `Send to ${n} contact${n === 1 ? '' : 's'}`
+      : `Send to ${n} client${n === 1 ? '' : 's'}`;
     btn.disabled = n === 0;
   }
 
@@ -1291,6 +1347,7 @@
       subject: document.getElementById('bcSubject').value.trim(),
       body: document.getElementById('bcBody').value.trim(),
       audience: document.getElementById('bcAudience').value,
+      limit: Number(document.getElementById('bcBatch').value) || undefined,
     };
   }
 
@@ -1312,23 +1369,36 @@
   }
 
   async function sendBroadcast() {
-    const { subject, body, audience } = bcInputs();
+    const { subject, body, audience, limit } = bcInputs();
     if (!subject || !body) return bcResult('Write the subject and message first.', 'err');
     const n = bcRecipients();
     if (!n) return bcResult('That audience has no clients with an email address.', 'err');
+    const isList = isListAudience(audience);
     const label = document.querySelector(`#bcAudience option[value="${audience}"]`).textContent;
-    if (!confirm(`Send "${subject}" to ${n} client${n === 1 ? '' : 's'} (${label})?\n\nThis emails real clients immediately.`)) return;
+    const warn = isList
+      ? `Send "${subject}" to up to ${n} imported contact${n === 1 ? '' : 's'} (${label})?\n\n` +
+        `These are NOT Geometriya accounts. Each email carries an unsubscribe link and explains why they're hearing from you. ` +
+        `Anyone who has unsubscribed, or who already has an account, is skipped automatically.`
+      : `Send "${subject}" to ${n} client${n === 1 ? '' : 's'} (${label})?\n\nThis emails real clients immediately.`;
+    if (!confirm(warn)) return;
     const btn = document.getElementById('bcSendBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Sending…';
     try {
-      const r = await apiCall('/api/admin/broadcast', { method: 'POST', body: JSON.stringify({ subject, body, audience }) });
-      bcResult(`Sent to ${r.sent} client${r.sent === 1 ? '' : 's'}` +
+      const r = await apiCall('/api/admin/broadcast', {
+        method: 'POST',
+        body: JSON.stringify({ subject, body, audience, ...(isList ? { limit } : {}) }),
+      });
+      bcResult(`Sent to ${r.sent} ${isList ? 'contact' : 'client'}${r.sent === 1 ? '' : 's'}` +
         (r.failed ? ` — ${r.failed} FAILED (${(r.failures || []).join('; ')})` : '') +
         (r.skippedNoEmail ? ` · ${r.skippedNoEmail} skipped (no email on file)` : '') +
-        (r.skippedInvalid ? ` · ${r.skippedInvalid} skipped (test/placeholder address)` : '') + '.',
+        (r.skippedInvalid ? ` · ${r.skippedInvalid} skipped (test/placeholder address)` : '') +
+        (r.skippedUnsub ? ` · ${r.skippedUnsub} skipped (unsubscribed)` : '') +
+        (r.skippedAlreadyUser ? ` · ${r.skippedAlreadyUser} skipped (already a Geometriya user)` : '') +
+        (r.remainingInList != null ? ` · ${r.remainingInList} still to go in this list` : '') + '.',
         r.failed ? 'err' : 'ok');
       showToast(r.failed ? 'Broadcast finished with failures.' : 'Broadcast sent.', r.failed ? 'error' : 'success');
+      if (isList) await loadContactLists();   // refresh "N left of M"
     } catch (e) {
       bcResult('Send failed: ' + e.message, 'err');
     } finally {
