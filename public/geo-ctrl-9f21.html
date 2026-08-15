@@ -716,7 +716,6 @@
         <span class="section-sub mono" id="serviceHealthStamp">—</span>
       </div>
       <div id="sec-service-health">
-        <div id="totalCostCard" style="margin-bottom: 16px;"></div>
         <div class="stats" id="serviceHealthGrid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 28px;">
           <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
         </div>
@@ -787,6 +786,13 @@
           <div class="stat-foot" id="mRevFoot">&nbsp;</div>
         </div>
       </div>
+      <!-- What the business SPENDS belongs next to what it earns — revenue
+           and run-rate are the same question read from two ends. It used to
+           sit under Service Health, which is about whether things are up,
+           not what they cost. The line-by-line breakdown collapses because
+           the headline is the number you check daily; the bifurcation is
+           what you open when something looks off. -->
+      <div id="totalCostCard" style="margin-top:16px;"></div>
       </div>
 
       <div class="section-head">
@@ -1097,6 +1103,8 @@
   // different badge so a live number is never mistaken for a guess, or vice
   // versa. USD and INR totals are kept separate rather than blended at some
   // FX rate that goes stale the moment it's written.
+  const COST_OPEN_KEY = 'geo_costBreakdownOpen';
+
   function renderTotalCost(tc) {
     const el = document.getElementById('totalCostCard');
     if (!el) return;
@@ -1141,6 +1149,10 @@
       tc.oneTimeInr > 0 ? money(tc.oneTimeInr, 'INR') : null,
     ].filter(Boolean).join(' + ');
 
+    // Collapsed by default and remembered: the headline is what you glance
+    // at, the bifurcation is what you open when a number looks wrong.
+    let open = false;
+    try { open = localStorage.getItem(COST_OPEN_KEY) === '1'; } catch { /* private mode */ }
     el.innerHTML = `
       <div class="stat" style="grid-column: 1 / -1;">
         <div class="stat-label">Total monthly cost</div>
@@ -1148,13 +1160,30 @@
         <div class="stat-foot">${tc.lines.length} cost${tc.lines.length === 1 ? '' : 's'} tracked
           ${oneTimeTotal ? ` · ${oneTimeTotal} paid one-time (not part of the monthly rate)` : ''}
           ${tc.manualError ? ` · <span style="color:var(--red)">${escapeHtml(tc.manualError)}</span>` : ''}</div>
-        <div class="table-wrap" style="margin-top:12px;">
+        <button id="costToggle" onclick="toggleCostBreakdown()"
+          style="margin-top:10px; background:transparent; border:1px solid var(--border); border-radius:5px;
+                 color:var(--muted); font-size:11.5px; font-family:inherit; padding:4px 10px; cursor:pointer;
+                 display:inline-flex; align-items:center; gap:6px;">
+          <span id="costChevron" style="display:inline-block; transition:transform .15s; transform:rotate(${open ? 0 : -90}deg);">▾</span>
+          <span id="costToggleLabel">${open ? 'Hide breakdown' : 'Show breakdown'}</span>
+        </button>
+        <div id="costBreakdown" class="table-wrap" style="margin-top:12px; ${open ? '' : 'display:none;'}">
           <table>
             <thead><tr><th>Service</th><th>Billed as</th><th>Monthly equiv.</th><th>Source</th><th>Note</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
       </div>`;
+  }
+
+  function toggleCostBreakdown() {
+    const box = document.getElementById('costBreakdown');
+    if (!box) return;
+    const open = box.style.display === 'none';
+    box.style.display = open ? '' : 'none';
+    document.getElementById('costChevron').style.transform = `rotate(${open ? 0 : -90}deg)`;
+    document.getElementById('costToggleLabel').textContent = open ? 'Hide breakdown' : 'Show breakdown';
+    try { localStorage.setItem(COST_OPEN_KEY, open ? '1' : '0'); } catch { /* private mode */ }
   }
 
   async function loadServiceHealth() {
