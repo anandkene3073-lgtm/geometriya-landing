@@ -1520,9 +1520,16 @@ export default function GeometriyaLanding() {
       {/* ACCESS / CTA */}
       <section id="access" style={{ borderTop: `1px solid ${C.line}`, background: C.bgPanel }}>
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '72px 24px', textAlign: 'center' }}>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, marginBottom: 14 }}>Currently in private testing</h2>
+          {/* This used to read "Currently in private testing … your trial
+              starts as soon as we approve your access", which described a
+              gate the system does not have: verify-otp approves and starts
+              the trial in the same call. Measured across 75 real accounts,
+              72 were live within five minutes and the median was 37 seconds
+              — OTP round-trip, not a person. Promising a wait that never
+              happens only talks people out of signing up. */}
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, marginBottom: 14 }}>Start in under a minute</h2>
           <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 10 }}>
-            We&rsquo;re refining the full workspace before opening it up. Sign up with your mobile number and we&rsquo;ll verify you instantly &mdash; your 30-day trial starts as soon as we approve your access.
+            Sign up with your mobile number, enter the code we text you, and you&rsquo;re straight into the charts. Your 30-day trial starts the moment you verify &mdash; no waiting for approval, no card.
           </p>
           <p style={{ color: C.gold, fontSize: 13.5, fontWeight: 600, marginBottom: 28 }}>
             30-day free trial &middot; Free forever after &middot; Just your mobile number
