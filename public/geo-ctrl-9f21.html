@@ -870,7 +870,7 @@
           <span class="section-chevron" id="chev-email-clients">▾</span>
           <h2>Email clients</h2>
         </div>
-        <span class="section-sub">sent one-by-one via Resend — addresses are never shared between recipients</span>
+        <span class="section-sub">sent one-by-one via Brevo — addresses are never shared, every email carries an unsubscribe link</span>
       </div>
       <div id="sec-email-clients">
       <div class="compose-card">
@@ -1292,7 +1292,11 @@
       // have never been emailed, not the list's total size.
       group.innerHTML = contactLists.map(l => {
         const label = l.source.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        return `<option value="list:${escapeHtml(l.source)}">${escapeHtml(label)} — ${l.pending} left of ${l.total}</option>`;
+        // "left" counts only who will actually receive mail — contacts who
+        // already hold an account, or opted out, are excluded rather than
+        // promised and then silently dropped at send time.
+        const state = l.pending > 0 ? `${l.pending} left of ${l.total}` : `all ${l.total} done`;
+        return `<option value="list:${escapeHtml(l.source)}">${escapeHtml(label)} — ${state}</option>`;
       }).join('');
     } catch (e) {
       console.warn('contact lists unavailable:', e.message);
@@ -1331,9 +1335,25 @@
     const n = bcRecipients();
     const btn = document.getElementById('bcSendBtn');
     btn.textContent = isList
-      ? `Send to ${n} contact${n === 1 ? '' : 's'}`
+      ? (n === 0 ? 'Nothing left to send' : `Send to ${n} contact${n === 1 ? '' : 's'}`)
       : `Send to ${n} client${n === 1 ? '' : 's'}`;
     btn.disabled = n === 0;
+
+    // A finished list should explain itself rather than just greying out —
+    // "0 left" reads like a bug when the real answer is "everyone who needed
+    // this got it, and the rest already have accounts".
+    if (isList && n === 0) {
+      const l = contactLists.find(x => x.source === audience.slice(5));
+      if (l) {
+        const why = [
+          l.emailed ? `${l.emailed} emailed` : null,
+          l.alreadyUsers ? `${l.alreadyUsers} already have accounts` : null,
+          l.unsubscribed ? `${l.unsubscribed} unsubscribed` : null,
+          l.bounced ? `${l.bounced} bounced` : null,
+        ].filter(Boolean).join(' · ');
+        bcResult(`This list is complete — ${why}.`, 'ok');
+      }
+    }
   }
 
   function bcResult(msg, cls) {
