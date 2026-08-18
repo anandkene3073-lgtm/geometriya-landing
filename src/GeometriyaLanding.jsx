@@ -482,6 +482,14 @@ const TOOL_GROUPS = [
 // Live backend, deployed on Render.
 const API_BASE_URL = 'https://geometriya-backend-render.onrender.com';
 
+// ── Cloudflare Turnstile site key (signup bot gate). SITE keys are public by
+//    design — they ship in the page for anyone to read — so hardcoding is
+//    fine here; only the SECRET (backend, Render env) is sensitive. The same
+//    widget serves the app at app.geometricalanalysis.com; this domain is on
+//    its allowlist. Empty string disables the widget AND the token check, so
+//    the form keeps working if the widget is ever retired. ──
+const TURNSTILE_SITE_KEY = '0x4AAAAAAETkCVKutSSRlTd7';
+
 // Prices are region-dependent (₹ in India, $ elsewhere). The backend decides
 // which to SHOW from the browser's IANA timezone; the currency a user is
 // actually charged is re-derived server-side from their phone at checkout, so
@@ -592,6 +600,43 @@ const nationalNumberOk = (code, local) => {
 
 function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [step, setStep] = useState('details'); // details | otp | success | already_registered
+  // ── Turnstile (bot gate, mirrors the app's signup form). Rendered
+  //    imperatively into a div because Cloudflare's api.js owns that DOM —
+  //    React must not reconcile inside it. Tokens are single-use: a failed
+  //    signup resets the widget so the retry carries a fresh one. ──
+  const captchaRef = useRef(null);
+  const captchaWidgetId = useRef(null);
+  const [captchaToken, setCaptchaToken] = useState('');
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || step !== 'details') return;
+    let cancelled = false;
+    const render = () => {
+      if (cancelled || !captchaRef.current || captchaRef.current.childNodes.length) return;
+      captchaWidgetId.current = window.turnstile.render(captchaRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token) => setCaptchaToken(token),
+        'expired-callback': () => setCaptchaToken(''),
+        'error-callback': () => setCaptchaToken(''),
+        theme: 'dark',
+      });
+    };
+    if (window.turnstile) {
+      render();
+    } else {
+      const already = document.querySelector('script[data-turnstile]');
+      if (already) {
+        already.addEventListener('load', render, { once: true });
+      } else {
+        const s = document.createElement('script');
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        s.async = true;
+        s.dataset.turnstile = '1';
+        s.addEventListener('load', render, { once: true });
+        document.head.appendChild(s);
+      }
+    }
+    return () => { cancelled = true; captchaWidgetId.current = null; setCaptchaToken(''); };
+  }, [step]);
   const [name, setName] = useState('');
   // `phone` stays the FULL international number — every call below (signup,
   // the 409→login fallback, verify-otp, create-order) already sends it.
@@ -672,6 +717,19 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       setStatus('error');
       return;
     }
+    // Indian mobiles only start 6-9 (TRAI numbering plan) — the backend
+    // rejects anything else, but its "Invalid phone number" doesn't say
+    // which digit is the problem.
+    if (dialCode === '91' && !/^[6-9]/.test(phoneLocal)) {
+      setErrorMsg('An Indian mobile number starts with 6, 7, 8 or 9 — please check the first digit.');
+      setStatus('error');
+      return;
+    }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setErrorMsg('Please wait for the verification box to finish, then try again.');
+      setStatus('error');
+      return;
+    }
     setStatus('loading');
     setErrorMsg('');
     try {
@@ -683,7 +741,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         // happens several scrolls and one form later — by then the parameter
         // may be long gone. Without this the referrer earned nothing, which
         // is most of why 61 codes had produced no credited signups.
-        body: JSON.stringify({ name, phone, email, password, referralCode: readReferralCode() || undefined }),
+        body: JSON.stringify({ name, phone, email, password, referralCode: readReferralCode() || undefined, captchaToken: captchaToken || undefined }),
       });
       const data = await res.json();
       if (res.status === 409) {
@@ -710,6 +768,12 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       setStep('otp');
       setStatus('idle');
     } catch (err) {
+      // Turnstile tokens are single-use — whatever the server said, this one
+      // is spent. Reset so the retry carries a fresh token.
+      if (TURNSTILE_SITE_KEY && window.turnstile && captchaWidgetId.current !== null) {
+        window.turnstile.reset(captchaWidgetId.current);
+        setCaptchaToken('');
+      }
       setErrorMsg(err.message || 'Something went wrong — please try again.');
       setStatus('error');
     }
@@ -915,6 +979,13 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         onChange={(e) => setPassword2(e.target.value)}
         style={{ ...inputStyle, minWidth: 220 }}
       />
+      {/* Turnstile bot gate — Cloudflare renders into this div (see the
+          step effect above). Absent entirely while the site key is empty. */}
+      {TURNSTILE_SITE_KEY && (
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', minHeight: 65 }}>
+          <div ref={captchaRef} />
+        </div>
+      )}
       {/* Disabled until the NATIONAL number is complete for the chosen
           country — the old phone.length !== 10 gate is what left a +27
           client with a dead button no matter what he typed. */}
@@ -1529,7 +1600,7 @@ export default function GeometriyaLanding() {
               happens only talks people out of signing up. */}
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, marginBottom: 14 }}>Start in under a minute</h2>
           <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 10 }}>
-            Sign up with your mobile number, enter the code we text you, and you&rsquo;re straight into the charts. Your 30-day trial starts the moment you verify &mdash; no waiting for approval, no card.
+            Sign up with your mobile number, enter the code we email you, and you&rsquo;re straight into the charts. Your 30-day trial starts the moment you verify &mdash; no waiting for approval, no card.
           </p>
           <p style={{ color: C.gold, fontSize: 13.5, fontWeight: 600, marginBottom: 28 }}>
             30-day free trial &middot; Free forever after &middot; Just your mobile number
