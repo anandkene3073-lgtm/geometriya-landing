@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="How to connect your Angel One account to Geometriya for free live and intraday chart data.">
+<meta name="theme-color" content="#060A14">
+<link rel="icon" href="/favicon.ico">
+<title>Connect Angel One</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+
+<style>
+  /* ── Light palette: the complete token set lives on bare :root, so the
+     un-stamped "system" state always resolves. Neutrals carry a slight blue
+     bias to sit with Geometriya's navy rather than reading as flat grey. ── */
+  :root {
+    --ground:      #F5F7FB;
+    --surface:     #FFFFFF;
+    --surface-alt: #EEF2F9;
+    --line:        #DCE3EE;
+    --line-soft:   #E8EDF5;
+    --ink:         #121A2B;
+    --ink-mid:     #45566F;
+    --ink-dim:     #6B7C97;
+    --accent:      #2F62E8;
+    --accent-soft: #E7EEFE;
+    --live:        #12855F;
+    --live-soft:   #E1F4EC;
+    --warn:        #9A6512;
+    --warn-soft:   #FBF1DE;
+    --shadow:      0 1px 2px rgba(18,26,43,.05), 0 8px 24px -12px rgba(18,26,43,.18);
+  }
+  /* System-dark, only when the viewer hasn't explicitly chosen light. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #080B14;
+      --surface:     #0F1524;
+      --surface-alt: #151D30;
+      --line:        #232E45;
+      --line-soft:   #1A2335;
+      --ink:         #E6ECF7;
+      --ink-mid:     #A7B6CE;
+      --ink-dim:     #7C8DA8;
+      --accent:      #6D9BFF;
+      --accent-soft: #14203C;
+      --live:        #4FCB9C;
+      --live-soft:   #0C2A20;
+      --warn:        #E7B45C;
+      --warn-soft:   #2A2110;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.8);
+    }
+  }
+  /* Explicit dark choice wins in the other direction too. */
+  :root[data-theme="dark"] {
+    --ground:      #080B14;
+    --surface:     #0F1524;
+    --surface-alt: #151D30;
+    --line:        #232E45;
+    --line-soft:   #1A2335;
+    --ink:         #E6ECF7;
+    --ink-mid:     #A7B6CE;
+    --ink-dim:     #7C8DA8;
+    --accent:      #6D9BFF;
+    --accent-soft: #14203C;
+    --live:        #4FCB9C;
+    --live-soft:   #0C2A20;
+    --warn:        #E7B45C;
+    --warn-soft:   #2A2110;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 40px 20px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+  }
+
+  /* ── Masthead ── */
+  .mast { display: flex; flex-direction: column; gap: 14px; }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand svg { display: block; flex-shrink: 0; }
+  .brand span {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11.5px; font-weight: 600;
+    letter-spacing: .17em; text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  h1 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: clamp(29px, 7vw, 40px);
+    font-weight: 700; line-height: 1.13;
+    letter-spacing: -.021em;
+    margin: 0; text-wrap: balance;
+  }
+  .standfirst {
+    margin: 0; font-size: 16.5px; color: var(--ink-mid);
+    max-width: 52ch;
+  }
+
+  /* ── Language switch ── */
+  .langbar { display: flex; gap: 6px; }
+  .langbtn {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11.5px; font-weight: 600; letter-spacing: .07em;
+    padding: 7px 15px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink-dim);
+    transition: background .14s ease, color .14s ease, border-color .14s ease;
+  }
+  .langbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .langbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .langbtn[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+  }
+  :root[data-theme="dark"] .langbtn[aria-pressed="true"] { color: #08111F; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .langbtn[aria-pressed="true"] { color: #08111F; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 22px 24px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .card.tinted-live { background: var(--live-soft); border-color: color-mix(in srgb, var(--live) 34%, transparent); }
+  .card.tinted-warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 34%, transparent); }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink-dim); margin: 0;
+  }
+  .eyebrow.on-live { color: var(--live); }
+  .eyebrow.on-warn { color: var(--warn); }
+
+  h2 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 21px; font-weight: 600; letter-spacing: -.012em;
+    margin: 0; text-wrap: balance;
+  }
+  .card p { margin: 0; color: var(--ink-mid); }
+  .card p.lead { color: var(--ink); }
+
+  ul.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  ul.plain li { display: flex; gap: 10px; align-items: flex-start; color: var(--ink-mid); }
+  ul.plain li::before {
+    content: ""; flex-shrink: 0;
+    width: 6px; height: 6px; margin-top: 10px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .tinted-live ul.plain li::before { background: var(--live); }
+
+  /* ── Steps: a genuine sequence, so the numbering carries meaning ── */
+  .steps { display: flex; flex-direction: column; gap: 2px; counter-reset: step; }
+  .step {
+    display: grid; grid-template-columns: 38px 1fr; gap: 16px;
+    padding: 18px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-n {
+    counter-increment: step;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 13px; font-weight: 600;
+    color: var(--accent);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 2px;
+  }
+  .step-n::before { content: counter(step, decimal-leading-zero); }
+  .step-body { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .step-body h3 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 17px; font-weight: 600; letter-spacing: -.008em;
+    margin: 0; color: var(--ink); text-wrap: balance;
+  }
+  .step-body p { margin: 0; color: var(--ink-mid); font-size: 15.2px; }
+
+  .where {
+    display: flex; flex-direction: column; gap: 6px;
+    background: var(--surface-alt); border-radius: 9px;
+    padding: 11px 13px; font-size: 14.4px; color: var(--ink-mid);
+  }
+  .where b { color: var(--ink); font-weight: 600; }
+
+  kbd {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: .87em; font-weight: 600;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 5px; padding: 2px 6px; white-space: nowrap;
+  }
+
+  .dot {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 600; color: var(--live); white-space: nowrap;
+  }
+  .dot::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--live); flex-shrink: 0;
+  }
+
+  /* ── Troubleshooting ── */
+  .faq { display: flex; flex-direction: column; gap: 0; }
+  details {
+    border-bottom: 1px solid var(--line-soft);
+  }
+  details:last-child { border-bottom: none; }
+  summary {
+    cursor: pointer; list-style: none;
+    padding: 14px 26px 14px 0; position: relative;
+    font-weight: 500; color: var(--ink); font-size: 15.4px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+";
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    position: absolute; right: 2px; top: 13px;
+    color: var(--ink-dim); font-size: 17px; line-height: 1;
+  }
+  details[open] summary::after { content: "–"; }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  details p { margin: 0 0 15px; color: var(--ink-mid); font-size: 15px; padding-right: 20px; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  footer p { margin: 0; font-size: 14px; color: var(--ink-dim); }
+  footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Language visibility ── */
+  [lang="hi"] { display: none; }
+  body[data-lang="hi"] [lang="en"] { display: none; }
+  body[data-lang="hi"] [lang="hi"] { display: revert; }
+  body[data-lang="hi"] { font-size: 16.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="brand">
+      <svg viewBox="0 0 100 100" width="24" height="24" fill="none" aria-hidden="true">
+        <polygon points="50,17 85,81 15,81" fill="currentColor" opacity=".16" style="color:var(--accent)"/>
+        <polyline points="15,81 50,19 85,81" stroke="var(--accent)" stroke-width="9" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline points="33,81 50,50 67,81" stroke="var(--accent)" stroke-width="9" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <span>Geometriya</span>
+    </div>
+
+    <h1>
+      <span lang="en">Connect Angel One for live charts</span>
+      <span lang="hi">Live charts के लिए Angel One जोड़ें</span>
+    </h1>
+
+    <p class="standfirst">
+      <span lang="en">Link your own Angel One account to unlock intraday timeframes and live prices. It is free, takes about a minute, and needs nothing installed.</span>
+      <span lang="hi">अपना Angel One account जोड़िए और intraday timeframes तथा live prices चालू कीजिए। यह मुफ़्त है, लगभग एक मिनट लगता है, और कुछ भी install नहीं करना पड़ता।</span>
+    </p>
+
+    <div class="langbar">
+      <button class="langbtn" type="button" data-lang="en" aria-pressed="true">ENGLISH</button>
+      <button class="langbtn" type="button" data-lang="hi" aria-pressed="false">हिंदी</button>
+    </div>
+  </header>
+
+  <section class="card tinted-live">
+    <p class="eyebrow on-live">
+      <span lang="en">Before you start</span>
+      <span lang="hi">शुरू करने से पहले</span>
+    </p>
+    <ul class="plain">
+      <li>
+        <span lang="en">An <b>Angel One account</b> that you can log in to.</span>
+        <span lang="hi">एक <b>Angel One account</b> जिसमें आप login कर सकें।</span>
+      </li>
+      <li>
+        <span lang="en">The <b>mobile number registered with Angel One</b>, and your <b>Angel One PIN</b>.</span>
+        <span lang="hi">वह <b>mobile number जो Angel One में registered है</b>, और आपका <b>Angel One PIN</b>।</span>
+      </li>
+      <li>
+        <span lang="en"><b>No authenticator app.</b> No token to copy. No paid subscription.</span>
+        <span lang="hi"><b>कोई authenticator app नहीं।</b> कोई token copy नहीं करना। कोई paid subscription नहीं।</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-n" aria-hidden="true"></div>
+        <div class="step-body">
+          <h3>
+            <span lang="en">Open the Data menu</span>
+            <span lang="hi">Data menu खोलिए</span>
+          </h3>
+          <div class="where">
+            <div>
+              <span lang="en"><b>On a phone:</b> tap <kbd>☰</kbd> beside the Geometriya logo, then <b>Data Connection</b>.</span>
+              <span lang="hi"><b>Phone पर:</b> Geometriya logo के बगल में <kbd>☰</kbd> दबाइए, फिर <b>Data Connection</b>।</span>
+            </div>
+            <div>
+              <span lang="en"><b>On a computer:</b> click the small feed chip next to the stock name — it usually reads <kbd>Data Daily</kbd>.</span>
+              <span lang="hi"><b>Computer पर:</b> stock के नाम के पास वाले छोटे feed chip पर click कीजिए — उस पर आमतौर पर <kbd>Data Daily</kbd> लिखा होता है।</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n" aria-hidden="true"></div>
+        <div class="step-body">
+          <h3>
+            <span lang="en">Choose Angel One</span>
+            <span lang="hi">Angel One चुनिए</span>
+          </h3>
+          <p>
+            <span lang="en">Tap <b>Angel One</b> in the list, then <b>Connect with Angel One</b>.</span>
+            <span lang="hi">List में <b>Angel One</b> पर tap कीजिए, फिर <b>Connect with Angel One</b> दबाइए।</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n" aria-hidden="true"></div>
+        <div class="step-body">
+          <h3>
+            <span lang="en">Log in on Angel One's own page</span>
+            <span lang="hi">Angel One के अपने page पर login कीजिए</span>
+          </h3>
+          <p>
+            <span lang="en">Enter your <b>mobile number</b> and tap <b>Send OTP</b>. Type the OTP, then your <b>Angel One PIN</b>. This page belongs to Angel One — your login details are entered there, never in Geometriya.</span>
+            <span lang="hi">अपना <b>mobile number</b> डालकर <b>Send OTP</b> दबाइए। OTP डालिए, फिर अपना <b>Angel One PIN</b>। यह page Angel One का अपना है — आपकी login details वहीं डाली जाती हैं, Geometriya में कभी नहीं।</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n" aria-hidden="true"></div>
+        <div class="step-body">
+          <h3>
+            <span lang="en">You come back automatically</span>
+            <span lang="hi">आप अपने आप वापस आ जाते हैं</span>
+          </h3>
+          <p>
+            <span lang="en">Geometriya opens again on its own. In the Data menu, <span class="dot">Angel One</span> now carries a green dot — that is your live feed.</span>
+            <span lang="hi">Geometriya अपने आप दोबारा खुल जाता है। Data menu में <span class="dot">Angel One</span> पर अब हरा dot दिखेगा — वही आपका live feed है।</span>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">
+      <span lang="en">What changes</span>
+      <span lang="hi">क्या बदलता है</span>
+    </p>
+    <ul class="plain">
+      <li>
+        <span lang="en"><b>Intraday timeframes unlock</b> — 1M, 5M, 15M, 25M and 1H become available.</span>
+        <span lang="hi"><b>Intraday timeframes चालू हो जाते हैं</b> — 1M, 5M, 15M, 25M और 1H उपलब्ध हो जाते हैं।</span>
+      </li>
+      <li>
+        <span lang="en"><b>Prices move during market hours</b> instead of updating once after close.</span>
+        <span lang="hi"><b>Market hours में prices चलते रहते हैं</b>, बजाय बाज़ार बंद होने के बाद एक बार update होने के।</span>
+      </li>
+      <li>
+        <span lang="en"><b>The Algo scanner works</b> — it reads 15-minute candles, so it needs a live feed.</span>
+        <span lang="hi"><b>Algo scanner काम करने लगता है</b> — यह 15-minute candles पढ़ता है, इसलिए इसे live feed चाहिए।</span>
+      </li>
+      <li>
+        <span lang="en">Weekly and Monthly charts keep using <b>Data Daily</b>, which holds far more history.</span>
+        <span lang="hi">Weekly और Monthly charts <b>Data Daily</b> से ही चलते रहते हैं, जिसमें कहीं ज़्यादा history होती है।</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="card tinted-warn">
+    <p class="eyebrow on-warn">
+      <span lang="en">Every morning</span>
+      <span lang="hi">हर सुबह</span>
+    </p>
+    <p class="lead">
+      <span lang="en">Angel One ends every session at <b>midnight IST</b>. This is their rule, not ours, and it applies to every app that uses their data.</span>
+      <span lang="hi">Angel One हर session <b>आधी रात (midnight IST)</b> को समाप्त कर देता है। यह उनका नियम है, हमारा नहीं, और यह उनके data का उपयोग करने वाले हर app पर लागू होता है।</span>
+    </p>
+    <p>
+      <span lang="en">So each day you reconnect once — the same few taps, a few seconds. You will know it is time because the Data menu shows <b>Angel One (expired)</b>, and intraday timeframes stop updating.</span>
+      <span lang="hi">इसलिए हर दिन एक बार दोबारा connect करना होता है — वही कुछ taps, चंद सेकंड। आपको पता चल जाएगा क्योंकि Data menu में <b>Angel One (expired)</b> दिखने लगेगा और intraday timeframes update होना बंद कर देंगे।</span>
+    </p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">
+      <span lang="en">If something goes wrong</span>
+      <span lang="hi">अगर कुछ गड़बड़ हो</span>
+    </p>
+    <div class="faq">
+
+      <details>
+        <summary>
+          <span lang="en">Angel One says the mobile number is not recognised</span>
+          <span lang="hi">Angel One कहता है कि mobile number पहचाना नहीं गया</span>
+        </summary>
+        <p>
+          <span lang="en">Use the number registered with your Angel One account, not any other number you own. If you have changed your number recently, update it with Angel One first.</span>
+          <span lang="hi">वही number इस्तेमाल कीजिए जो आपके Angel One account में registered है, कोई दूसरा नहीं। अगर आपने हाल ही में number बदला है, तो पहले Angel One में update करवाइए।</span>
+        </p>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="en">The PIN is being rejected</span>
+          <span lang="hi">PIN स्वीकार नहीं हो रहा</span>
+        </summary>
+        <p>
+          <span lang="en">That screen wants your <b>Angel One PIN</b> — the one you use in the Angel One app. It is not your Geometriya password. The two accounts are completely separate.</span>
+          <span lang="hi">वह screen आपका <b>Angel One PIN</b> माँगती है — वही जो आप Angel One app में इस्तेमाल करते हैं। यह आपका Geometriya password नहीं है। दोनों accounts बिल्कुल अलग हैं।</span>
+        </p>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="en">The login is refused and I am sure the details are right</span>
+          <span lang="hi">Login अस्वीकार हो रहा है जबकि details सही हैं</span>
+        </summary>
+        <p>
+          <span lang="en">If the account has been unused for a long time, Angel One may have marked it dormant. Log in on Angel One's own website or app — they will show you what is needed to reactivate it, usually a short form. Then come back and connect again.</span>
+          <span lang="hi">अगर account लंबे समय से इस्तेमाल नहीं हुआ, तो Angel One ने उसे dormant कर दिया होगा। Angel One की अपनी website या app पर login कीजिए — वे बता देंगे कि उसे दोबारा चालू करने के लिए क्या चाहिए, आमतौर पर एक छोटा form। फिर वापस आकर दोबारा connect कीजिए।</span>
+        </p>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="en">Charts still say Data Daily after connecting</span>
+          <span lang="hi">Connect करने के बाद भी charts पर Data Daily दिख रहा है</span>
+        </summary>
+        <p>
+          <span lang="en">Open the Data menu and check that <b>Angel One</b> has the green dot. If it reads <b>(paused)</b>, tap it once to switch the feed across. If it reads <b>(expired)</b>, connect again.</span>
+          <span lang="hi">Data menu खोलकर देखिए कि <b>Angel One</b> पर हरा dot है या नहीं। अगर <b>(paused)</b> लिखा है, तो एक बार tap करके feed बदल दीजिए। अगर <b>(expired)</b> लिखा है, तो दोबारा connect कीजिए।</span>
+        </p>
+      </details>
+
+      <details>
+        <summary>
+          <span lang="en">I do not have an Angel One account</span>
+          <span lang="hi">मेरे पास Angel One account नहीं है</span>
+        </summary>
+        <p>
+          <span lang="en">You do not need one. Geometriya also connects to <b>Fyers</b> (free, but its login needs an authenticator app) and <b>Dhan</b> (needs their paid Data API plan). Without any broker, charts run on <b>Data Daily</b>, our own end-of-day feed — full daily, weekly and monthly history, but no intraday.</span>
+          <span lang="hi">ज़रूरी नहीं है। Geometriya में <b>Fyers</b> (मुफ़्त, लेकिन उसके login में authenticator app चाहिए) और <b>Dhan</b> (उनका paid Data API plan चाहिए) भी जुड़ते हैं। बिना किसी broker के charts <b>Data Daily</b> पर चलते हैं, जो हमारा अपना end-of-day feed है — पूरी daily, weekly और monthly history, लेकिन intraday नहीं।</span>
+        </p>
+      </details>
+
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      <span lang="en">Your Angel One login is entered only on Angel One's own page. Geometriya never sees or stores your password, PIN or OTP.</span>
+      <span lang="hi">आपका Angel One login सिर्फ़ Angel One के अपने page पर डाला जाता है। Geometriya आपका password, PIN या OTP कभी नहीं देखता और न ही रखता है।</span>
+    </p>
+    <p>
+      <span lang="en">Still stuck? <a href="https://wa.me/919730224399">WhatsApp us</a> or <a href="mailto:geometriya.analysis@gmail.com?subject=Angel%20One%20connection">email support</a>.</span>
+      <span lang="hi">फिर भी अटके हैं? <a href="https://wa.me/919730224399">WhatsApp कीजिए</a> या <a href="mailto:geometriya.analysis@gmail.com?subject=Angel%20One%20connection">email कीजिए</a>।</span>
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  const buttons = document.querySelectorAll('.langbtn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang;
+      document.body.dataset.lang = lang;
+      document.documentElement.lang = lang;
+      buttons.forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+    });
+  });
+</script>
+</body>
+</html>
