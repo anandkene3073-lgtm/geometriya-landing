@@ -307,7 +307,7 @@ const RD_METHODS = [
   { num: '01', kind: 'mitotic', title: 'Mitotic Scaling', body: 'Our proprietary price-per-bar scale. Lock it once and every 45° angle stays a true 45° through any pan, zoom, or timeframe on that stock.' },
   { num: '02', kind: 'gann', title: 'Dream 45° (1×1)', body: 'From confirmed swings, geometry unfolds — Auto Angles make sure to give, pinpointing exact reversals.' },
   { num: '03', kind: 'squares', title: 'Automatic Gann Squares', body: 'Extend seamlessly up to 8×8 and beyond — just click to apply across historical price action.' },
-  { num: '04', kind: 'scan', title: 'Scanners', body: 'Auto‑scan of all geometric behaviors — Dream 45°, Equilateral Triangles, Squaring of Range, and more.' },
+  { num: '04', kind: 'scan', title: 'Scanners', body: 'Two dozen scanners over the whole toolkit — Dream 45°, triangles, Squaring of Range and Gann arcs, plus order blocks, liquidity sweeps and market structure.' },
 ];
 
 function TickerStrip() {
@@ -1219,8 +1219,10 @@ function Nav() {
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 17, letterSpacing: '.14em', color: RD.blue }}>GEOMETRIYA</span>
         </div>
         <div className="geo-nav-links" style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
-          {['Method', 'Tools', 'Pricing'].map(l => (
-            <a key={l} href={`#${l.toLowerCase()}`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>{l}</a>
+          {/* Label and anchor are separate now — "Start here" can't derive its
+              own href by lowercasing (it would produce "#start here"). */}
+          {[['Start here', 'start'], ['Method', 'method'], ['Tools', 'tools'], ['Pricing', 'pricing']].map(([label, id]) => (
+            <a key={id} href={`#${id}`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>{label}</a>
           ))}
           <a href="#" onClick={e => { e.preventDefault(); setShowSubCheck(true); }} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>My Plan</a>
           {/* Desktop's actual one-click install path — the mobile install
@@ -1342,9 +1344,19 @@ export default function GeometriyaLanding() {
             <h1 style={{ fontSize: 'clamp(34px, 4.4vw, 48px)', fontWeight: 700, lineHeight: 1.08, margin: '18px 0 18px', letterSpacing: '-.02em' }}>
               Markets move in <RdBrand>geometry,</RdBrand><br />we just draw it.
             </h1>
-            <p style={{ fontSize: 15.5, lineHeight: 1.55, color: RD.inkDim, maxWidth: 480, marginBottom: 24 }}>
-              Triangles, Gann boxes, auto angles, Squaring of Range &mdash; mapped by <RdBrand>Mitotic Scaling</RdBrand>, live on every chart.<br />
-              Every chart hides a geometry, <RdBrand>Geometriya</RdBrand> finds it.
+            {/* Plain English FIRST. The old subhead opened on a feature list
+                (triangles, Gann boxes, Squaring of Range) that only means
+                something to someone who already knows the method — a new
+                visitor couldn't tell what the product actually does. The
+                poetic line still closes it; it just no longer has to carry
+                the explaining. */}
+            <p style={{ fontSize: 15.5, lineHeight: 1.6, color: RD.inkDim, maxWidth: 500, marginBottom: 24 }}>
+              <RdBrand>Geometriya</RdBrand> is a market-analysis platform that reads the relationship
+              between <span style={{ color: RD.ink }}>price, time and geometry</span> &mdash; to show you the levels that
+              matter, which way a move is pointing, and where it may turn.<br />
+              <span style={{ display: 'inline-block', marginTop: 10 }}>
+                Every chart hides a geometry. <RdBrand>Geometriya</RdBrand> finds it.
+              </span>
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 18 }}>
               <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Try It Free</a>
@@ -1366,6 +1378,97 @@ export default function GeometriyaLanding() {
       </section>
 
       <TickerStrip />
+
+      {/* FLAGSHIP — Masterstroke + Paper Trading.
+          The site described the 2025 toolkit and said nothing about either
+          of these, which is backwards: they are the two features that
+          answer a newcomer's actual questions ("which stocks?" and "how do
+          I know this works?") without needing the method explained first. */}
+      <section id="start" style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 24px 40px' }}>
+        <div style={{ maxWidth: 700, marginBottom: 44 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 16 }}>START HERE</div>
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.1, marginBottom: 18 }}>
+            Two answers to the only<br />two questions that matter.
+          </h2>
+          <p style={{ color: RD.inkDim, fontSize: 17, lineHeight: 1.65 }}>
+            Which stocks are worth looking at today &mdash; and how do I know any of this actually works?
+          </p>
+        </div>
+        <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+          {/* ── Masterstroke ── */}
+          <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '34px 30px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <RdCorners />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#E8B93C' }}>✦ MASTERSTROKE</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
+              One scan. Your best<br />candidates, ranked.
+            </div>
+            <div style={{ fontSize: 14.5, lineHeight: 1.65, color: RD.inkDim }}>
+              Every tool in Geometriya reads the same chart independently &mdash; the 45° angle, the swing
+              it projects from, market structure, Gann arcs, time cycles, momentum, the weekly trend,
+              strength against the index. Masterstroke runs all of them across your whole list and
+              counts the votes.
+            </div>
+            {/* The real score chip, in the app's own Masterstroke gold — the
+                site and the product should look like one thing. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(232,185,60,.07)', border: '1px solid rgba(232,185,60,.3)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, flexWrap: 'wrap' }}>
+              <span style={{ color: '#E8B93C', fontWeight: 700 }}>✦ 81</span>
+              <span style={{ color: RD.green, fontWeight: 700 }}>▲ BULL</span>
+              <span style={{ color: RD.inkFaint }}>7 methods agree</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, lineHeight: 1.55, color: RD.inkDim }}>
+              {['Readings that agree add points; readings that disagree subtract them — so the top of the list is genuine agreement, not one indicator’s opinion.',
+                'Tap any row and every vote is spelled out with its score, including the ones pulling the other way.',
+                'Open the chart with exactly the tools that fired already drawn, so you can check the reading yourself.'].map((t, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10 }}>
+                  <span style={{ color: '#E8B93C', flexShrink: 0 }}>✓</span><span>{t}</span>
+                </div>
+              ))}
+            </div>
+            {/* The same caveat the app itself prints under every Masterstroke
+                breakdown. Saying it on the marketing page too keeps the two
+                honest with each other — and a score is genuinely not a call. */}
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12, marginTop: 'auto' }}>
+              A high score is not a recommendation &mdash; it means several independent readings of the
+              same chart agree today. What you do with that is still your call.
+            </div>
+          </div>
+
+          {/* ── Paper trading ── */}
+          <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '34px 30px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <RdCorners />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#6FA0FF' }}>📄 PAPER TRADING</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
+              Practice with ₹10,00,000<br />before you risk a rupee.
+            </div>
+            <div style={{ fontSize: 14.5, lineHeight: 1.65, color: RD.inkDim }}>
+              Every account gets a virtual book that trades on real NSE prices. Buy and sell by hand,
+              or let one of the built-in strategies trade it for you, and watch what the method
+              actually does &mdash; with none of your own money involved.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(111,160,255,.07)', border: '1px solid rgba(111,160,255,.3)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, flexWrap: 'wrap' }}>
+              <span style={{ color: RD.ink, fontWeight: 700 }}>₹10,00,000</span>
+              <span style={{ color: RD.inkFaint }}>practice money — not real</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, lineHeight: 1.55, color: RD.inkDim }}>
+              {['Orders fill at the next market open with realistic charges — the results mean something.',
+                'Your own trades and the strategy’s are kept as two separate books with separate scorecards, so you can see who is trading better.',
+                'Start again whenever you like — resets are counted openly, never quietly erased.'].map((t, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10 }}>
+                  <span style={{ color: '#6FA0FF', flexShrink: 0 }}>✓</span><span>{t}</span>
+                </div>
+              ))}
+            </div>
+            {/* Said here rather than discovered later — live strategy signals
+                genuinely need intraday data, and Angel One is a free one-tap
+                connect, so the caveat doubles as the next step. */}
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12 }}>
+              Trading by hand works on day one. Letting a strategy trade needs live intraday data &mdash;
+              connect a broker free in one tap.
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* METHOD */}
       <section id="method" style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 24px 40px' }}>
