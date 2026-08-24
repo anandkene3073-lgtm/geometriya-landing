@@ -676,26 +676,62 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
     document.body.appendChild(script);
   });
 
+  // Soft Relief — the same treatment as the app's sign-in screen, so the
+  // signup form here and the login screen it hands over to feel like one
+  // surface. Fields are pressed into the panel, the button stands off it,
+  // and neither carries a border; see GATE_CSS in the app for the three
+  // rules this depends on.
+  //
+  // Colours are the page's own, unchanged — only the light is new. Fields
+  // keep #0c1526, already darker than the panel, so the inset shadow just
+  // finishes the job of making them read as channels cut into it. The CTA
+  // keeps its gradient: it is the one element that should NOT look like the
+  // same material as everything around it.
+  // Every field is one width. This used to be a wrapping flex row where each
+  // input carried its own minWidth (150 for the country select, 220 for the
+  // rest) and sized to its content, so the six fields came out ragged and
+  // the rows never lined up. The grid below owns the widths instead —
+  // width:100% and minWidth:0 let a cell shrink to its track rather than
+  // pushing past it, which is what kept the placeholders from fitting.
   const inputStyle = {
     background: '#0c1526',
-    border: `1px solid ${C.line}`,
+    border: 'none',
     color: C.ink,
-    padding: '13px 16px',
-    borderRadius: 8,
+    padding: '14px 16px',
+    borderRadius: 10,
     fontSize: 14,
-    minWidth: 220,
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
     fontFamily: "'Inter', sans-serif",
     outline: 'none',
+    boxShadow: 'inset 3px 4px 9px rgba(0,0,0,0.62), inset -2px -2px 6px rgba(146,178,255,0.05)',
   };
+
+  // Two even columns while there is room, one when there is not — no media
+  // query needed, and no fixed breakpoint to get wrong on a tablet.
+  const formGrid = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(235px, 1fr))',
+    gap: 12,
+    alignItems: 'start',
+    maxWidth: 560,
+    margin: '0 auto',
+  };
+  const fullRow = { gridColumn: '1 / -1' };
 
   const buttonStyle = (disabled) => ({
     background: disabled ? '#16233b' : CTA_GRADIENT,
-    boxShadow: disabled ? 'none' : '0 6px 18px rgba(47,95,224,0.32)',
+    // A lit top lip over a dark base, so it reads as a raised key rather than
+    // a flat fill. Disabled loses the lip and sinks instead.
+    boxShadow: disabled
+      ? 'inset 2px 3px 8px rgba(0,0,0,0.45)'
+      : 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -2px 0 rgba(0,0,0,0.22), 0 8px 20px rgba(47,95,224,0.34)',
     color: disabled ? '#4c5f7d' : '#FFFFFF',
     fontWeight: 600,
     fontSize: 14,
-    padding: '13px 22px',
-    borderRadius: 8,
+    padding: '14px 22px',
+    borderRadius: 10,
     border: 'none',
     cursor: disabled ? 'default' : 'pointer',
   });
@@ -888,15 +924,17 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   // restored session carrying the retired plan renders nothing rather than
   // throwing on an undefined call.
   const planBanner = selectedPlan && PLAN_LABELS[selectedPlan] && (
-    <div style={{ width: '100%', marginBottom: 4, fontSize: 13, color: C.ink, background: C.bgPanel, border: `1px solid ${C.gold}`, borderRadius: 4, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+    <div style={{ ...fullRow, marginBottom: 4, fontSize: 13, color: C.ink, background: C.bgPanel, border: `1px solid ${C.gold}`, borderRadius: 4, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <span>Buying: <strong>{PLAN_LABELS[selectedPlan]()}</strong> — skipping the free trial</span>
       <span onClick={clearSelectedPlan} style={{ color: C.inkFaint, cursor: 'pointer', textDecoration: 'underline', flexShrink: 0, fontSize: 12 }}>Use free trial instead</span>
     </div>
   );
 
   if (step === 'otp') {
+    // Same grid as the details step, so the code field lands exactly where
+    // the fields above it were rather than jumping to a new width.
     return (
-      <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <form onSubmit={handleVerifyOtp} style={formGrid}>
         {planBanner}
         <input
           type="text"
@@ -905,17 +943,18 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
           placeholder="Enter the code we sent you"
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
-          style={{ ...inputStyle, minWidth: 220, letterSpacing: 2 }}
+          style={{ ...inputStyle, letterSpacing: 2 }}
         />
-        <button type="submit" disabled={status === 'loading'} style={buttonStyle(status === 'loading')}>
+        <button type="submit" disabled={status === 'loading'}
+          style={{ ...buttonStyle(status === 'loading'), ...fullRow, justifySelf: 'center', minWidth: 240 }}>
           {status === 'loading' ? 'Verifying…' : 'Verify'}
         </button>
         {status === 'error' && (
-          <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ ...fullRow, textAlign: 'center', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
             {errorMsg}
           </div>
         )}
-        <div style={{ width: '100%', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ ...fullRow, textAlign: 'center', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
           Sent to your email — check your inbox and spam folder. Didn&rsquo;t get it?{' '}
           <span
             onClick={() => { setStep('details'); setOtp(''); setStatus('idle'); setErrorMsg(''); }}
@@ -929,7 +968,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   }
 
   return (
-    <form onSubmit={handleSendOtp} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+    <form onSubmit={handleSendOtp} style={formGrid}>
       {planBanner}
       <input
         type="text"
@@ -943,7 +982,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         value={dialCode}
         onChange={(e) => applyPhoneParts(e.target.value, phoneLocal)}
         aria-label="Country code"
-        style={{ ...inputStyle, minWidth: 150 }}
+        style={inputStyle}
       >
         {DIAL_CODES.map(c => <option key={c.label} value={c.code}>{c.label}</option>)}
       </select>
@@ -961,7 +1000,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         placeholder="Email address"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{ ...inputStyle, minWidth: 220 }}
+        style={inputStyle}
       />
       <input
         type="password"
@@ -969,7 +1008,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         placeholder="Password (min 6 characters)"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        style={{ ...inputStyle, minWidth: 220 }}
+        style={inputStyle}
       />
       <input
         type="password"
@@ -977,12 +1016,12 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         placeholder="Re-type password"
         value={password2}
         onChange={(e) => setPassword2(e.target.value)}
-        style={{ ...inputStyle, minWidth: 220 }}
+        style={inputStyle}
       />
       {/* Turnstile bot gate — Cloudflare renders into this div (see the
           step effect above). Absent entirely while the site key is empty. */}
       {TURNSTILE_SITE_KEY && (
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', minHeight: 65 }}>
+        <div style={{ ...fullRow, display: 'flex', justifyContent: 'center', minHeight: 65 }}>
           <div ref={captchaRef} />
         </div>
       )}
@@ -992,20 +1031,20 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       <button
         type="submit"
         disabled={status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2}
-        style={buttonStyle(status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2)}
+        style={{ ...buttonStyle(status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2), ...fullRow, justifySelf: 'center', minWidth: 240 }}
       >
-        {status === 'loading' ? 'Sending…' : 'Get Early Access'}
+        {status === 'loading' ? 'Sending…' : 'Sign Up'}
       </button>
       {dialCode !== '91' && (
-        <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ ...fullRow, textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
           Enter your number without the +{dialCode}. International accounts are billed in $.
         </div>
       )}
-      <div style={{ width: '100%', textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ ...fullRow, textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
         We&rsquo;ll send a verification code to your email to confirm your account.
       </div>
       {status === 'error' && (
-        <div style={{ width: '100%', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ ...fullRow, textAlign: 'center', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
           {errorMsg}
         </div>
       )}
