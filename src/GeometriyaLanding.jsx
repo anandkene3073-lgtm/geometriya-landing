@@ -1476,34 +1476,45 @@ export default function GeometriyaLanding() {
           {/* ── Paper trading ── */}
           <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '34px 30px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <RdCorners />
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#6FA0FF' }}>📄 PAPER TRADING</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#6FA0FF' }}>⚡ LIVE ALGO &middot; PAPER MONEY</div>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
-              Practice with ₹10,00,000<br />before you risk a rupee.
+              Watch a strategy trade live.<br />Before you risk a rupee.
             </div>
             <div style={{ fontSize: 14.5, lineHeight: 1.65, color: RD.inkDim }}>
-              Every account gets a virtual book that trades on real NSE prices. Buy and sell by hand,
-              or let one of the built-in strategies trade it for you, and watch what the method
-              actually does &mdash; with none of your own money involved.
+              Switch the algo on and it starts trading a ₹10,00,000 practice book on real NSE prices
+              &mdash; from our servers, every five minutes the market is open. No broker. No deposit.
+              Close the laptop and it keeps going. Come back to exactly what it bought, when, and why.
             </div>
+            {/* The moment that sells it: switching it on costs nothing and
+                needs nobody. Verified in backend/server-paper.js — the sweep
+                takes every account with the algo enabled and uses a
+                server-side data token, so a visitor with no broker genuinely
+                gets live algo trades. (The site used to claim the opposite,
+                written back when the engine ran in the browser.) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(111,160,255,.07)', border: '1px solid rgba(111,160,255,.3)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, flexWrap: 'wrap' }}>
+              <span style={{ color: RD.green, fontWeight: 700 }}>▶ ALGO ON</span>
               <span style={{ color: RD.ink, fontWeight: 700 }}>₹10,00,000</span>
               <span style={{ color: RD.inkFaint }}>practice money — not real</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, lineHeight: 1.55, color: RD.inkDim }}>
-              {['Orders fill at the next market open with realistic charges — the results mean something.',
-                'Your own trades and the strategy’s are kept as two separate books with separate scorecards, so you can see who is trading better.',
+              {['No broker, no deposit, nothing to install — sign up, pick a list, press start, and it is trading.',
+                'Every trade is stamped with the strategy that placed it and the price it paid, so you can judge the method on its own record.',
+                'Your trades and the strategy’s stay in separate books with separate scorecards — see who is actually trading better.',
                 'Start again whenever you like — resets are counted openly, never quietly erased.'].map((t, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10 }}>
                   <span style={{ color: '#6FA0FF', flexShrink: 0 }}>✓</span><span>{t}</span>
                 </div>
               ))}
             </div>
-            {/* Said here rather than discovered later — live strategy signals
-                genuinely need intraday data, and Angel One is a free one-tap
-                connect, so the caveat doubles as the next step. */}
-            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12 }}>
-              Trading by hand works on day one. Letting a strategy trade needs live intraday data &mdash;
-              connect a broker free in one tap.
+            {/* The remaining broker nuance, stated honestly and turned into a
+                next step rather than a barrier: trades fill at real prices
+                regardless, but OPEN positions are marked at the last stored
+                close until a broker supplies live quotes (the app labels
+                those rows "at last close"). */}
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12, marginTop: 'auto' }}>
+              Trades fill at real NSE prices with realistic charges either way. Connect a broker later
+              &mdash; free, one tap &mdash; and open positions mark against live prices instead of the
+              last close.
             </div>
           </div>
         </div>
