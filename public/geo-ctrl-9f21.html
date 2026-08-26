@@ -687,22 +687,36 @@
     </header>
 
     <main>
+      <!-- "Active Users" used to sit beside "Total Users" showing the same 87,
+           because the only thing separating them was a deactivation that had
+           never happened. Worse, it read as ENGAGEMENT — while 41 of those
+           accounts had never opened the app at all. Renamed to Enabled, which
+           is what it actually counts, and given a real usage tile beside it. -->
       <div class="stats">
         <div class="stat approved">
-          <div class="stat-label">Active Users</div>
+          <div class="stat-label">Enabled</div>
           <div class="stat-value" id="statActive">—</div>
+          <div class="stat-foot">access not revoked</div>
         </div>
         <div class="stat rejected">
           <div class="stat-label">Deactivated</div>
           <div class="stat-value" id="statDeactivated">—</div>
+          <div class="stat-foot">access revoked</div>
         </div>
         <div class="stat approved">
           <div class="stat-label">Paid</div>
           <div class="stat-value" id="statPaid">—</div>
+          <div class="stat-foot" id="statPaidFoot">&nbsp;</div>
+        </div>
+        <div class="stat approved">
+          <div class="stat-label">Used in 7 days</div>
+          <div class="stat-value" id="statUsed7">—</div>
+          <div class="stat-foot" id="statUsed7Foot">&nbsp;</div>
         </div>
         <div class="stat pending">
           <div class="stat-label">Total Users</div>
           <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-foot" id="statTotalFoot">&nbsp;</div>
         </div>
       </div>
 
@@ -851,7 +865,7 @@
 
       <div id="sec-users">
       <div class="tabs">
-        <div class="tab active" data-status="active" onclick="switchTab('active')">Active</div>
+        <div class="tab active" data-status="active" onclick="switchTab('active')">Enabled</div>
         <div class="tab" data-status="paid" onclick="switchTab('paid')">Paid</div>
         <div class="tab" data-status="deactivated" onclick="switchTab('deactivated')">Deactivated</div>
       </div>
@@ -1088,6 +1102,28 @@
       document.getElementById('statActive').textContent = allUsers.active.length;
       document.getElementById('statDeactivated').textContent = allUsers.deactivated.length;
       document.getElementById('statTotal').textContent = data.users.length;
+      // ── The numbers under the numbers ──────────────────────────────────
+      // Real usage, from last_seen_at — which is stamped on every
+      // authenticated request, so it means "opened the app", not "signed up".
+      // This is the one tile on the row that can fall, and the only one that
+      // says whether the product is being used.
+      const weekAgo = now - 7 * 86400000;
+      const used7 = data.users.filter(u => u.last_seen_at && new Date(u.last_seen_at).getTime() > weekAgo).length;
+      const neverSeen = data.users.filter(u => !u.last_seen_at).length;
+      const pendingOtp = data.users.filter(u => u.status === 'pending_otp').length;
+      document.getElementById('statUsed7').textContent = used7;
+      document.getElementById('statUsed7Foot').textContent = data.users.length
+        ? `${Math.round(used7 / data.users.length * 100)}% of everyone` : '';
+      // Signups that never finished OTP are counted in Total but are not
+      // accounts anyone can use — say so, rather than letting Total flatter.
+      document.getElementById('statTotalFoot').textContent =
+        [neverSeen ? `${neverSeen} never opened it` : null,
+         pendingOtp ? `${pendingOtp} stuck at OTP` : null].filter(Boolean).join(' · ') || 'all have signed in';
+      document.getElementById('statPaidFoot').textContent = (() => {
+        const soon = allUsers.paid.filter(u =>
+          (new Date(u.subscription_end_date).getTime() - now) < 14 * 86400000).length;
+        return allUsers.paid.length ? (soon ? `${soon} renewing within 14d` : 'none renewing soon') : 'no subscriptions';
+      })();
       renderTable();
       await loadContactLists();   // before updateBcCount — it reads the list counts
       updateBcCount();
@@ -1914,7 +1950,7 @@
       empty.classList.remove('hidden');
       document.getElementById('emptyMsg').textContent = searchQuery
         ? `No ${currentTab} users match "${searchQuery}".`
-        : (currentTab === 'active' ? 'No active users yet.'
+        : (currentTab === 'active' ? 'No enabled users yet.'
           : currentTab === 'paid' ? 'Nobody is on a paid subscription right now.'
           : 'No deactivated users.');
       return;
