@@ -752,8 +752,15 @@
         <span class="section-sub mono" id="serviceHealthStamp">—</span>
       </div>
       <div id="sec-service-health">
-        <div class="stats" id="serviceHealthGrid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 28px;">
-          <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
+        <!-- A plain block, NOT .stats. This used to hold service tiles
+             directly and so was a grid; it now holds a document — map, then
+             banner, then cards — each of which brings its own grid where it
+             needs one. Leaving .stats here turned those sections into four
+             side-by-side columns. -->
+        <div id="serviceHealthGrid" style="margin-bottom: 28px;">
+          <div class="stats" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));">
+            <div class="stat"><div class="stat-label">Loading…</div><div class="stat-value">—</div></div>
+          </div>
         </div>
       </div>
 
