@@ -1146,6 +1146,99 @@
     ok: 'OK', warning: 'Warning', critical: 'Critical',
     unconfigured: 'Not set up', error: 'Error',
   };
+
+  // ── Service health as a flow, not a wall ────────────────────────────────
+  // The grid answered "is anything red" and never "does that red matter".
+  // On 29-Aug two of three red tiles were states the owner had deliberately
+  // chosen (MSG91 at zero — SMS was never opted into; Render at 101% of a
+  // ceiling he typed himself), sitting indistinguishable from a real outage.
+  //
+  // These stages are the actual path a trade takes. Anything left of the
+  // arrow can stop an order; SHOW and NOTIFY sit beside it and cannot.
+  const HEALTH_STAGES = [
+    { key: 'data',    title: 'DATA IN',  note: 'NSE / MCX files and the jobs that fetch them' },
+    { key: 'store',   title: 'STORE',    note: 'the ledger and the daily bars' },
+    { key: 'decide',  title: 'DECIDE',   note: 'the 5-minute sweep — entries, exits, trailing' },
+    { key: 'execute', title: 'EXECUTE',  note: 'the only IP Dhan will accept orders from' },
+  ];
+  const HEALTH_ASIDES = [
+    { key: 'show',   title: 'SHOW',   note: 'cannot cost a trade' },
+    { key: 'notify', title: 'NOTIFY', note: 'cannot cost a trade' },
+  ];
+  const sevRank = { critical: 3, error: 3, warning: 2, unconfigured: 1, ok: 0 };
+
+  function healthCard(s, i, services) {
+    const byDesign = !!s.byDesign;
+    // A chosen state is reported, never alarmed. Keeping the real status text
+    // but draining the colour is the honest middle: it still says "Critical",
+    // it just stops competing for attention with things that are wrong.
+    const col = byDesign ? 'var(--muted)' : (SERVICE_HEALTH_COLORS[s.status] || 'var(--muted)');
+    const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
+    const bad = !byDesign && sevRank[s.status] >= 2;
+    const drillable = (Array.isArray(s.droplets) && s.droplets.length) || !!s.byPrefix;
+    // Impact and first action appear only when something is actually wrong.
+    // A dashboard that explains itself at full volume while healthy is one
+    // nobody reads when it isn't.
+    const guidance = bad && (s.impact || s.action) ? `
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;line-height:1.5;">
+        ${s.impact ? `<div style="color:var(--text);"><b style="color:${col};">If this stays down:</b> ${escapeHtml(s.impact)}</div>` : ''}
+        ${s.action ? `<div style="margin-top:5px;color:var(--muted);"><b>Do first:</b> ${escapeHtml(s.action)}</div>` : ''}
+      </div>` : '';
+    return `
+      <div class="stat${drillable ? ' stat-clickable' : ''}"${drillable ? ` onclick="openServiceDetail(${i})"` : ''}
+           style="border-color:${bad ? col : 'var(--border)'};${bad ? 'grid-column:1/-1;' : ''}">
+        <div class="stat-label" style="display:flex;align-items:flex-start;gap:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;margin-top:3px;"></span>
+          <span style="flex:1;min-width:0;">${s.name}</span>
+        </div>
+        <div class="stat-value thin" style="color:${col};">${lbl}${byDesign ? ' <span style="font-size:11px;opacity:.75">· by design</span>' : ''}</div>
+        <div class="stat-foot">${escapeHtml(s.detail || '')}${drillable ? ' <span style="opacity:.6">· click for detail</span>' : ''}</div>
+        ${guidance}
+      </div>`;
+  }
+
+  function healthBand(stage, services, arrow) {
+    const inStage = services.map((s, i) => ({ s, i })).filter(x => x.s.stage === stage.key);
+    if (!inStage.length) return '';
+    const worst = inStage.reduce((n, x) => Math.max(n, x.s.byDesign ? 0 : (sevRank[x.s.status] || 0)), 0);
+    const edge = worst >= 3 ? 'var(--red)' : worst === 2 ? 'var(--amber)' : 'var(--border)';
+    return `
+      <div style="border-left:3px solid ${edge};padding-left:12px;margin-bottom:${arrow ? '6px' : '18px'};">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+          <span class="mono" style="font-size:11px;letter-spacing:1.2px;color:var(--text);font-weight:700;">${stage.title}</span>
+          <span style="font-size:11px;color:var(--muted);">${stage.note}</span>
+        </div>
+        <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:0;">
+          ${inStage.map(x => healthCard(x.s, x.i, services)).join('')}
+        </div>
+      </div>
+      ${arrow ? '<div style="color:var(--muted);font-size:15px;margin:0 0 6px 14px;line-height:1;">&darr;</div>' : ''}`;
+  }
+
+  function renderHealthFlow(services) {
+    const placed = new Set([...HEALTH_STAGES, ...HEALTH_ASIDES].map(g => g.key));
+    const orphans = services.map((s, i) => ({ s, i })).filter(x => !placed.has(x.s.stage));
+    const money = HEALTH_STAGES.map((st, n) => healthBand(st, services, n < HEALTH_STAGES.length - 1)).join('');
+    const asides = HEALTH_ASIDES.map(st => healthBand(st, services, false)).join('');
+    return `
+      ${money}
+      <!-- The one fact worth standing above every outage on this page: the
+           stops are at the exchange, not in any box listed here. -->
+      <div style="border-left:3px solid var(--green);padding:9px 12px;margin:0 0 22px 0;font-size:11.5px;line-height:1.55;color:var(--muted);">
+        <b style="color:var(--green);">Resting stops survive all of the above.</b>
+        Every tracked position carries a Forever order sitting at Dhan for 365 days. If every service on
+        this page failed at once, those stops would still be at the exchange and would still fire. What
+        stops is <i>new</i> entries, algo bookings, and trailing.
+      </div>
+      ${asides}
+      ${orphans.length ? `
+        <div style="border-left:3px solid var(--border);padding-left:12px;">
+          <div class="mono" style="font-size:11px;letter-spacing:1.2px;color:var(--muted);margin-bottom:8px;">OTHER</div>
+          <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:0;">
+            ${orphans.map(x => healthCard(x.s, x.i, services)).join('')}
+          </div>
+        </div>` : ''}`;
+  }
   // Total project cost — see computeTotalCost() in server.js for the full
   // reasoning. Short version: DigitalOcean is the only provider here with a
   // real billing API, so its line is marked 'api'; everything else (Render,
@@ -1245,24 +1338,7 @@
       document.getElementById('serviceHealthStamp').textContent =
         'checked ' + new Date(data.checkedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       renderTotalCost(data.totalCost);
-      grid.innerHTML = (data.services || []).map((s, i) => {
-        const col = SERVICE_HEALTH_COLORS[s.status] || 'var(--muted)';
-        const lbl = SERVICE_HEALTH_LABELS[s.status] || s.status;
-        // A service that ships a droplet list has more to say than fits in a
-        // tile foot, so it becomes clickable and opens the full inventory.
-        // Services with more to say than fits in a tile foot become clickable.
-        const drillable = (Array.isArray(s.droplets) && s.droplets.length) || !!s.byPrefix;
-        return `
-          <div class="stat${drillable ? ' stat-clickable' : ''}"${drillable ? ` onclick="openServiceDetail(${i})"` : ''}
-               style="border-color:${s.status === 'critical' || s.status === 'error' ? col : 'var(--border)'}">
-            <div class="stat-label" style="display:flex;align-items:flex-start;gap:6px;">
-              <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;margin-top:3px;"></span>
-              <span style="flex:1;min-width:0;">${s.name}</span>
-            </div>
-            <div class="stat-value thin" style="color:${col};">${lbl}</div>
-            <div class="stat-foot">${escapeHtml(s.detail || '')}${drillable ? ' <span style="opacity:.6">· click for detail</span>' : ''}</div>
-          </div>`;
-      }).join('');
+      grid.innerHTML = renderHealthFlow(data.services || []);
     } catch (e) {
       grid.innerHTML = `<div class="stat"><div class="stat-label">Service Health</div><div class="stat-value" style="color:var(--red);font-size:13px;">Could not load</div><div class="stat-foot">${e.message}</div></div>`;
     }
