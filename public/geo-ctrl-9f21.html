@@ -1019,9 +1019,11 @@
   let ADMIN_KEY = localStorage.getItem('geo_admin_key') || '';
   let currentTab = 'active';
   let allUsers = { active: [], deactivated: [], paid: [] };
-  // Default: soonest-expiring trials float to the top.
-  let sortCol = 'trial';
-  let sortDir = 'asc';
+  // Default: newest signups first. The question this table gets opened with
+  // is almost always "who just arrived" — expiring trials matter too, but
+  // that is a column click away, and this was not.
+  let sortCol = 'signed';
+  let sortDir = 'desc';
   let searchQuery = '';
 
   // ── Collapsible section heads (Service Health / Business / Refer & earn /
@@ -2229,9 +2231,11 @@
       sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     } else {
       sortCol = col;
-      // Trial reads soonest-expiring first (ascending); last-active and logins
-      // read most-recent / most-frequent first, which is descending.
-      sortDir = (col === 'active' || col === 'logins') ? 'desc' : 'asc';
+      // Trial and Sub read soonest-expiring first (ascending) — the useful end
+      // of a deadline. Signed-up, last-active and logins read newest / most
+      // recent / most frequent first, which is descending. Landing on the
+      // wrong end costs a second click every time.
+      sortDir = (col === 'active' || col === 'logins' || col === 'signed') ? 'desc' : 'asc';
     }
     renderTable();
   }
