@@ -250,6 +250,18 @@
   .fnode { cursor: pointer; }
   .fnode rect { transition: fill 0.15s ease, stroke 0.15s ease; }
   .fnode:hover rect { fill: var(--panel-2); stroke: var(--accent); }
+  /* The map has to be readable as a WHOLE — its value is the shape, and you
+     cannot see a shape you have to scroll through. width/height:auto plus the
+     two max- constraints lets the browser shrink it to whichever of width or
+     viewport height binds first, keeping the aspect ratio either way. */
+  .sysmap { width: auto; height: auto; max-width: 100%; max-height: 72vh; display: block; margin: 0 auto; }
+  /* Below roughly a tablet, fitting 1080 units into the width drives the
+     labels under ~9px. There, scrolling sideways at full size is the better
+     trade — visible-but-unreadable is not visible. The cutoff is set where
+     the shrink-to-fit label size stops being comfortable, not at a device. */
+  @media (max-width: 860px) {
+    .sysmap { max-width: none; max-height: none; }
+  }
 
   .section-head {
     display: flex;
@@ -1339,7 +1351,11 @@
     ],
   };
 
-  const NODE_W = 200, NODE_H = 54, ROW_Y = r => 16 + r * 94;
+  // Seven rows have to fit on one screen alongside the legend and the cards
+  // below, so the rows are as tight as the connectors allow: 84 - 50 leaves a
+  // 34px channel between boxes, which every edge routes through.
+  const NODE_W = 200, NODE_H = 50, ROW_Y = r => 14 + r * 84;
+  const MAP_H = ROW_Y(6) + NODE_H + 14;
 
   // Worst live status across every check a node owns. byDesign states are
   // scored zero so a deliberately-empty MSG91 cannot paint a box red.
@@ -1370,9 +1386,9 @@
     return `<g class="fnode" onclick="openNodeDetail('${n.id}')">
       <rect x="${x}" y="${y}" width="${NODE_W}" height="${NODE_H}" rx="8"
             style="fill:${bg};stroke:${col};stroke-width:${worst >= 2 ? 2 : 1.2};${worst < 0 ? 'stroke-dasharray:4 3;' : ''}"></rect>
-      <circle cx="${x + 15}" cy="${y + 20}" r="4" style="fill:${col};"></circle>
-      <text x="${x + 27}" y="${y + 24}" style="fill:var(--text);font-size:13px;font-weight:700;">${n.label}</text>
-      <text x="${x + 15}" y="${y + 41}" style="fill:var(--muted);font-size:10.5px;">${n.sub}</text>
+      <circle cx="${x + 15}" cy="${y + 19}" r="4" style="fill:${col};"></circle>
+      <text x="${x + 27}" y="${y + 23}" style="fill:var(--text);font-size:13px;font-weight:700;">${n.label}</text>
+      <text x="${x + 15}" y="${y + 39}" style="fill:var(--muted);font-size:10.5px;">${n.sub}</text>
     </g>`;
   }
 
@@ -1391,7 +1407,7 @@
     const byId = {}; SYSTEM_MAP.nodes.forEach(n => { byId[n.id] = n; });
     const svg = `
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <svg viewBox="0 0 1080 660" style="width:100%;min-width:760px;height:auto;display:block;">
+        <svg class="sysmap" viewBox="0 0 1080 ${MAP_H}" width="1080" height="${MAP_H}">
           <defs><marker id="fArrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto">
             <path d="M0 0 L8 4 L0 8 z" style="fill:var(--muted);fill-opacity:.75;"></path></marker></defs>
           ${SYSTEM_MAP.edges.map(([a, b]) => edgeSvg(byId[a], byId[b])).join('')}
@@ -1407,10 +1423,9 @@
     const unmapped = services.map((s, i) => ({ s, i })).filter(x => !mapped.has(x.s.name));
 
     return `
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.55;margin:0 0 10px;">
-        A line means <b style="color:var(--text);">the box above needs the box below</b>. Click any box for what it
-        does, what breaks if it fails, what keeps running anyway, and the first thing to try.
-        Dashed boxes are not health-checked.
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.55;margin:0 0 8px;">
+        A line means <b style="color:var(--text);">the box above needs the box below</b>. Click any box for what
+        breaks and how to fix it. Dashed = not health-checked.
       </div>
       ${svg}
       <div style="border-left:3px solid var(--green);padding:9px 12px;margin:14px 0 18px;font-size:11.5px;line-height:1.55;color:var(--muted);">
