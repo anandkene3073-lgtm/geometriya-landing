@@ -244,6 +244,12 @@
 
   .stat-clickable { cursor: pointer; transition: all 0.15s ease; }
   .stat-clickable:hover { border-color: var(--accent); background: var(--panel-2); }
+  /* Every box on the system map opens its own runbook, so all of them must
+     look reachable — including the green ones. You read a node's notes to
+     understand the system, not only once it has gone red. */
+  .fnode { cursor: pointer; }
+  .fnode rect { transition: fill 0.15s ease, stroke 0.15s ease; }
+  .fnode:hover rect { fill: var(--panel-2); stroke: var(--accent); }
 
   .section-head {
     display: flex;
@@ -1147,25 +1153,327 @@
     unconfigured: 'Not set up', error: 'Error',
   };
 
-  // ── Service health as a flow, not a wall ────────────────────────────────
-  // The grid answered "is anything red" and never "does that red matter".
-  // On 29-Aug two of three red tiles were states the owner had deliberately
-  // chosen (MSG91 at zero — SMS was never opted into; Render at 101% of a
-  // ceiling he typed himself), sitting indistinguishable from a real outage.
+  // ── The system as a map, not a list ─────────────────────────────────────
+  // Two products sit on one shared stack, and a flat wall of tiles never
+  // showed which tile belonged to which — so every outage began with "what
+  // does this thing even feed?". This draws the real dependency tree.
   //
-  // These stages are the actual path a trade takes. Anything left of the
-  // arrow can stop an order; SHOW and NOTIFY sit beside it and cannot.
-  const HEALTH_STAGES = [
-    { key: 'data',    title: 'DATA IN',  note: 'NSE / MCX files and the jobs that fetch them' },
-    { key: 'store',   title: 'STORE',    note: 'the ledger and the daily bars' },
-    { key: 'decide',  title: 'DECIDE',   note: 'the 5-minute sweep — entries, exits, trailing' },
-    { key: 'execute', title: 'EXECUTE',  note: 'the only IP Dhan will accept orders from' },
-  ];
-  const HEALTH_ASIDES = [
-    { key: 'show',   title: 'SHOW',   note: 'cannot cost a trade' },
-    { key: 'notify', title: 'NOTIFY', note: 'cannot cost a trade' },
-  ];
+  // A line means: THE BOX ABOVE STOPS WORKING PROPERLY IF THE BOX BELOW
+  // FAILS. Trace down from a red box to see what is about to break next;
+  // trace up from something visibly broken to find the cause.
+  //
+  // The map and its repair notes are hard-coded in this page ON PURPOSE,
+  // not served from the backend. The thing you are most often trying to fix
+  // IS the backend, and a runbook that goes dark exactly when the service it
+  // documents goes dark is worth nothing. Vercel serves this file, so it
+  // still opens with Render, Supabase and the relay all dead.
+  //
+  // Written so it can be repaired by someone working alone with no other
+  // help: every box says what it is, what dies with it, what keeps running
+  // anyway, and the first command or dashboard to reach for. If you add a
+  // service, add a node here too — anything unmapped is listed under the
+  // diagram as unplaced rather than being silently dropped.
   const sevRank = { critical: 3, error: 3, warning: 2, unconfigured: 1, ok: 0 };
+
+  const SYSTEM_MAP = {
+    nodes: [
+      {
+        id: 'domain', row: 0, cx: 380, label: 'Hostinger', sub: 'domain registrar + DNS',
+        checks: ['Domain (geometricalanalysis.com)'],
+        what: 'geometricalanalysis.com is registered at Hostinger, and its DNS records point the names at Vercel. Hostinger hosts nothing — it is the registrar and the nameserver only. (It is easy to assume it serves the website, because it is where the domain was bought. It does not.)',
+        dies: 'Every address stops resolving — website, app, and admin alike. Nothing is lost or corrupted; it is simply all unreachable, which looks identical to everything being down at once.',
+        survives: 'Trading. The sweep talks to Supabase and Dhan by their own addresses, not yours, so entries and exits keep running while your domain is dark. Resting stops are at the exchange and are never involved.',
+        fix: [
+          'hostinger.com → Domains → check the expiry date and that auto-renew is ON.',
+          'If it has lapsed, renew immediately. There is a short grace period, after which anyone may buy the name.',
+          'If it is registered but resolving wrong, compare the DNS records against the values Vercel shows under each project → Settings → Domains.',
+        ],
+        where: 'hostinger.com',
+      },
+      {
+        id: 'website', row: 1, cx: 140, label: 'Website', sub: 'the public landing site',
+        what: 'The marketing site at geometricalanalysis.com, built from the geometriya-landing repo. This admin page is part of it, which is why the admin page keeps working when the trading stack is down.',
+        dies: 'New visitors see nothing and nobody new can sign up. No existing user is affected and no trading is affected — it is a shop window.',
+        survives: 'Everything that matters. Treat this as the lowest priority on the page.',
+        fix: ['Not a service of its own — it is whatever Vercel is doing. See the Vercel box below it.'],
+      },
+      {
+        id: 'app', row: 1, cx: 620, label: 'Geometriya', sub: 'the trading app',
+        what: 'The app itself, built from the geometriya-trading-app repo: charts, scanner, the algo panel. It is a WINDOW onto the server, not the engine. The sweep that actually trades runs on Render whether or not any browser is open.',
+        dies: 'You cannot see or change anything: no panel, no charts, no arming or disarming. Everything already armed keeps running exactly as it was.',
+        survives: 'All server-side trading. The 5-minute sweep keeps taking entries and exits on the settings snapshot it already holds, and resting stops are untouched.',
+        fix: ['Not a service of its own. See the Vercel box below it.'],
+      },
+      {
+        id: 'vercel-app', row: 2, cx: 620, label: 'Vercel', sub: 'app project',
+        checks: ['Vercel (hosting)'],
+        what: 'Static hosting and CDN for the trading app. Deploys automatically on every push to main of geometriya-trading-app.',
+        dies: 'The app will not load in a browser.',
+        survives: 'All trading. See the Geometriya box above.',
+        fix: [
+          'vercel.com → the project → Deployments. A red build is the usual cause: open it and read the build log.',
+          'To get back online now, find the last green deployment and use ⋯ → Promote to Production. That is instant and needs no code change.',
+          'A deploy that reports success but serves stale code has happened before (a dropped webhook): push an empty commit to force a rebuild.',
+        ],
+        where: 'vercel.com',
+      },
+      {
+        id: 'vercel-site', row: 2, cx: 140, label: 'Vercel', sub: 'landing project',
+        checks: ['Vercel (hosting)'],
+        what: 'The same Vercel account, a second project, serving the landing site and this admin page from geometriya-landing.',
+        dies: 'The public site and this admin page go down. You lose your view of everything, including this map.',
+        survives: 'All trading, and all of the services below — you simply cannot see them from here. Go to each provider dashboard directly.',
+        fix: [
+          'vercel.com → the landing project → Deployments; promote the last green build.',
+          'Both projects live in one Vercel account, so a billing or account-level problem takes down the app and the site together.',
+        ],
+        where: 'vercel.com',
+      },
+      {
+        id: 'render', row: 3, cx: 620, label: 'Render', sub: 'backend + the 5-min sweep',
+        checks: ['Render (hosting)'],
+        what: 'The Node/Express backend, and with it the 5-minute sweep — the loop that reads the ledger, replays the geometry, and decides entries, exits and stop trailing. This is the engine. Paid Starter tier, always-on, no spin-down.',
+        dies: 'Trading stops deciding: no new entries, no algo bookings, no trailing of stops to new levels. The app loads but every panel is empty. This is the most serious box on the map.',
+        survives: 'Every resting Forever stop already placed at Dhan. They are orders sitting at the exchange with a 365-day life and they do not need Render, or anything else here, to fire. A position with a resting stop is still floored while this is down.',
+        fix: [
+          'dashboard.render.com → the service → Logs. Read the actual error before restarting anything.',
+          'Manual Deploy → Deploy latest commit clears most bad states.',
+          'If it is out of memory or crash-looping on a recent change, roll back: Manual Deploy → pick the previous known-good commit.',
+          'The bandwidth figure on the tile is measured against RENDER_BANDWIDTH_LIMIT_GB, a number typed by hand into the env. Check the real workspace allowance before believing it is at a limit.',
+          'While it is down, positions are protected but not managed. If one needs to be exited by judgement, do it in the Dhan app directly, then remove the row with the ⨯ untrack button once the backend is back.',
+        ],
+        where: 'dashboard.render.com',
+      },
+      {
+        id: 'supabase', row: 4, cx: 300, label: 'Supabase', sub: 'ledger + daily bars',
+        checks: ['Supabase (DB)'],
+        what: 'The Postgres database. Holds the position ledger (what the algo believes it owns), the daily and intraday bars, users, and the order log. Shared between local development and production — there is only one.',
+        dies: 'The sweep can read nothing, so it decides nothing. Same practical effect as Render being down.',
+        survives: 'Resting stops at Dhan, entirely.',
+        fix: [
+          'status.supabase.com first — if it is their outage, there is nothing to do but wait.',
+          'The free plan stops at 500 MB and the database goes READ-ONLY when it is reached. Read-only is the dangerous state: the sweep appears alive but cannot record a fill, which is how a ledger drifts from reality. Watch the percentage on the tile and prune or upgrade BEFORE it arrives.',
+          'Never repair the ledger with a raw UPDATE. persist() rewrites the whole ledger each sweep and will restore whatever you deleted. Use the ⨯ untrack button in the app.',
+        ],
+        where: 'supabase.com/dashboard',
+      },
+      {
+        id: 'relay', row: 4, cx: 620, label: 'DigitalOcean relay', sub: '159.89.166.18 · the whitelisted IP',
+        checks: ['DigitalOcean (droplets)'],
+        what: 'A small Bangalore droplet. Dhan accepts order WRITES only from a whitelisted IP, and this box owns it — so every order the sweep places is forwarded through here. It also runs the NSE bhavcopy ingest on a systemd timer.',
+        dies: 'Nothing can be ordered. The sweep still decides correctly and still records what it wanted to do, but no order reaches Dhan — you will see DH-905 Invalid IP in the logs if something tries from elsewhere. The NSE ingest stops with it, so data goes stale that evening too.',
+        survives: 'Resting stops. They are already AT Dhan and need no relay to fire — which is the whole reason for placing them.',
+        fix: [
+          'ssh root@159.89.166.18 then: systemctl status geo-relay',
+          'systemctl restart geo-relay clears most of it; journalctl -u geo-relay -n 50 says why.',
+          'If the droplet is gone entirely, the IP is the thing that matters — rebuilding elsewhere means re-whitelisting the new IP with Dhan, which is not instant. Take a snapshot before ever destroying it.',
+          'While it is down you are unmanaged but not unprotected. Stops hold; place or exit anything urgent in the Dhan app by hand.',
+        ],
+        where: 'cloud.digitalocean.com',
+      },
+      {
+        id: 'notify', row: 4, cx: 880, label: 'Email & SMS', sub: 'Resend · Brevo · MSG91',
+        checks: ['Resend (email)', 'Brevo (broadcasts)', 'MSG91 (SMS)'],
+        what: 'Resend sends sign-in OTPs and the ops alarms. Brevo sends marketing broadcasts. MSG91 would send SMS but was deliberately never funded — OTP is email-only by choice, so its zero balance is the expected steady state and not a fault.',
+        dies: 'If Resend is capped (100/day, free), nobody NEW can sign in, because it is the only OTP channel. Existing sessions continue. You also stop receiving ops alarm mail, which means a later failure gets no shout.',
+        survives: 'All trading, in every case. Nothing here can cost a trade.',
+        fix: [
+          'The Resend daily cap resets at 05:30 IST. Broadcasts share the same 100/day allowance, so a broadcast can starve sign-in — that is the usual cause.',
+          'Env overrides exist for an urgent single send; see the mail helper in server.js.',
+          'MSG91 red is not a fault. Do not spend time on it.',
+        ],
+        where: 'resend.com',
+      },
+      {
+        id: 'ingest', row: 5, cx: 170, label: 'Bhavcopy ingest', sub: 'NSE 17:35/19:35 · MCX',
+        checks: ['Ingest runners (NSE)', 'NSE data (bhavcopy)', 'MCX data (bhavcopy)'],
+        what: 'The evening jobs that fetch the exchange end-of-day files and write the daily bars. NSE runs primarily from the relay box on a systemd timer (17:35 and 19:35 IST) with GitHub Actions as a late backup; MCX still runs on GitHub Actions only.',
+        dies: 'Daily bars go stale. Entries then pause on their own — the staleness gate refuses to compute geometry on a gapped series, which is deliberate. Exits keep running.',
+        survives: 'Exits, and every resting stop. A stale-data day costs you opportunities, never protection.',
+        fix: [
+          'ssh root@159.89.166.18 "systemctl list-timers bhavcopy-ingest; journalctl -u bhavcopy-ingest -n 30"',
+          'Run it by hand: cd /opt/bhavcopy-ingest && INGEST_RUNNER=relay /opt/node22/bin/node ingest.js',
+          'It must run on /opt/node22, not /usr/bin/node — the system Node is v20 and the Supabase client needs 22. The relay itself runs on 20; do not "fix" that by upgrading system Node.',
+          'AMBER on the tile means the relay died and GitHub quietly covered for it. The data looks fine, which is exactly the trap: fix the relay anyway, or you are back to one unreliable runner without knowing it.',
+          'MCX failing is low priority — nothing trades live on MCX.',
+        ],
+        where: 'GitHub Actions · relay systemd',
+      },
+      {
+        id: 'r2', row: 5, cx: 400, label: 'Cloudflare R2', sub: 'deep history archive',
+        checks: ['Cloudflare R2 (deep history)'],
+        what: 'Thirty years of end-of-day bars, spliced in underneath Supabase to power MAX-range charts without paying for that much Postgres.',
+        dies: 'MAX-range charts silently fall back to roughly the last two years. Shorter, never wrong.',
+        survives: 'Everything else. Lowest priority on the map along with the website.',
+        fix: ['Check the bucket at dash.cloudflare.com when convenient. Nothing here is urgent.'],
+        where: 'dash.cloudflare.com',
+      },
+      {
+        id: 'dhan', row: 5, cx: 620, label: 'Dhan', sub: 'the broker',
+        what: 'The broker. Holds the real money, the real positions, and every resting Forever order. Reads work from anywhere; WRITES are accepted only from the whitelisted relay IP.',
+        dies: 'Nothing can be placed, changed or cancelled, by the algo or by you. Positions are frozen as they stand.',
+        survives: 'Resting stops are stored on Dhan\'s side and at the exchange, so they still stand — but if Dhan itself is fully down, nothing is going through in either direction. This is the one box on the map with no fallback.',
+        fix: [
+          'Check the Dhan app or their status channel — if it is their outage, it is their outage.',
+          'If reads work but writes fail with DH-905, the problem is the relay IP, not Dhan. Go to the relay box.',
+          'A DHAN_ACCESS_TOKEN expires. If everything fails at once with auth errors, refresh the token in the Render env yourself.',
+        ],
+        where: 'dhan.co',
+      },
+      {
+        id: 'exchange', row: 6, cx: 620, label: 'NSE', sub: 'the exchange — stops live here',
+        what: 'Where the resting Forever orders actually sit, with a 365-day life. This is the bottom of the map on purpose: it is the only layer that protects you without depending on anything above it.',
+        dies: 'If the exchange is down, the market is closed and nobody is trading.',
+        survives: 'n/a — this is the floor.',
+        fix: ['Nothing to fix. Keep every tracked position carrying a resting stop, and this layer keeps working even if every other box on this page is dark.'],
+      },
+    ],
+    // [above, below] — "above needs below"
+    edges: [
+      ['domain', 'website'], ['domain', 'app'],
+      ['website', 'vercel-site'], ['app', 'vercel-app'],
+      ['vercel-app', 'render'],
+      ['render', 'supabase'], ['render', 'relay'], ['render', 'notify'],
+      ['supabase', 'ingest'], ['supabase', 'r2'],
+      ['relay', 'dhan'], ['dhan', 'exchange'],
+    ],
+  };
+
+  const NODE_W = 200, NODE_H = 54, ROW_Y = r => 16 + r * 94;
+
+  // Worst live status across every check a node owns. byDesign states are
+  // scored zero so a deliberately-empty MSG91 cannot paint a box red.
+  function nodeStatus(n, services) {
+    const bound = (n.checks || []).map(nm => services.find(s => s.name === nm)).filter(Boolean);
+    let worst = -1;
+    bound.forEach(s => { const r = s.byDesign ? 0 : (sevRank[s.status] || 0); if (r > worst) worst = r; });
+    return { worst, bound };
+  }
+  const nodeColor = w => w < 0 ? 'var(--muted)' : w >= 3 ? 'var(--red)' : w === 2 ? 'var(--amber)' : 'var(--green)';
+
+  // Everything that transitively sits ABOVE this node, i.e. what else stops
+  // when it fails. Derived from the edges so it cannot fall out of date.
+  function dependentsOf(id) {
+    const out = new Set(); const stack = [id];
+    while (stack.length) {
+      const cur = stack.pop();
+      SYSTEM_MAP.edges.forEach(([a, b]) => { if (b === cur && !out.has(a)) { out.add(a); stack.push(a); } });
+    }
+    return [...out];
+  }
+
+  function nodeSvg(n, services) {
+    const { worst } = nodeStatus(n, services);
+    const col = nodeColor(worst);
+    const bg = worst >= 3 ? 'var(--red-bg)' : worst === 2 ? 'var(--amber-bg)' : 'var(--panel-2)';
+    const x = n.cx - NODE_W / 2, y = ROW_Y(n.row);
+    return `<g class="fnode" onclick="openNodeDetail('${n.id}')">
+      <rect x="${x}" y="${y}" width="${NODE_W}" height="${NODE_H}" rx="8"
+            style="fill:${bg};stroke:${col};stroke-width:${worst >= 2 ? 2 : 1.2};${worst < 0 ? 'stroke-dasharray:4 3;' : ''}"></rect>
+      <circle cx="${x + 15}" cy="${y + 20}" r="4" style="fill:${col};"></circle>
+      <text x="${x + 27}" y="${y + 24}" style="fill:var(--text);font-size:13px;font-weight:700;">${n.label}</text>
+      <text x="${x + 15}" y="${y + 41}" style="fill:var(--muted);font-size:10.5px;">${n.sub}</text>
+    </g>`;
+  }
+
+  function edgeSvg(a, b) {
+    const y1 = ROW_Y(a.row) + NODE_H, y2 = ROW_Y(b.row), my = y1 + (y2 - y1) / 2;
+    const d = a.cx === b.cx
+      ? `M${a.cx} ${y1} V${y2 - 7}`
+      : `M${a.cx} ${y1} V${my} H${b.cx} V${y2 - 7}`;
+    // --border is too dark against --bg to read as a line at this weight, and
+    // the arrowheads carry the whole "which way does this dependency point"
+    // question, so both are drawn in muted rather than border.
+    return `<path d="${d}" style="fill:none;stroke:var(--muted);stroke-opacity:.5;stroke-width:1.5;" marker-end="url(#fArrow)"></path>`;
+  }
+
+  function renderHealthFlow(services) {
+    const byId = {}; SYSTEM_MAP.nodes.forEach(n => { byId[n.id] = n; });
+    const svg = `
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <svg viewBox="0 0 1080 660" style="width:100%;min-width:760px;height:auto;display:block;">
+          <defs><marker id="fArrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" style="fill:var(--muted);fill-opacity:.75;"></path></marker></defs>
+          ${SYSTEM_MAP.edges.map(([a, b]) => edgeSvg(byId[a], byId[b])).join('')}
+          ${SYSTEM_MAP.nodes.map(n => nodeSvg(n, services)).join('')}
+        </svg>
+      </div>`;
+
+    // Only things actually wrong get the full card treatment. A dashboard
+    // that explains itself at full volume while healthy is one nobody reads
+    // when it isn't.
+    const bad = services.map((s, i) => ({ s, i })).filter(x => !x.s.byDesign && sevRank[x.s.status] >= 2);
+    const mapped = new Set(SYSTEM_MAP.nodes.flatMap(n => n.checks || []));
+    const unmapped = services.map((s, i) => ({ s, i })).filter(x => !mapped.has(x.s.name));
+
+    return `
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.55;margin:0 0 10px;">
+        A line means <b style="color:var(--text);">the box above needs the box below</b>. Click any box for what it
+        does, what breaks if it fails, what keeps running anyway, and the first thing to try.
+        Dashed boxes are not health-checked.
+      </div>
+      ${svg}
+      <div style="border-left:3px solid var(--green);padding:9px 12px;margin:14px 0 18px;font-size:11.5px;line-height:1.55;color:var(--muted);">
+        <b style="color:var(--green);">Resting stops survive everything above.</b>
+        Every tracked position carries a Forever order sitting at Dhan for 365 days. If every box on this map
+        failed at once, those stops would still be at the exchange and would still fire. What stops is
+        <i>new</i> entries, algo bookings, and trailing.
+      </div>
+      ${bad.length ? `
+        <div class="mono" style="font-size:11px;letter-spacing:1.2px;color:var(--text);font-weight:700;margin-bottom:8px;">NEEDS ATTENTION</div>
+        <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:18px;">
+          ${bad.map(x => healthCard(x.s, x.i, services)).join('')}
+        </div>` : `
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:18px;">Nothing needs attention. Every check is green or green-by-choice.</div>`}
+      ${unmapped.length ? `
+        <div class="mono" style="font-size:11px;letter-spacing:1.2px;color:var(--muted);margin-bottom:8px;">NOT ON THE MAP YET</div>
+        <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:0;">
+          ${unmapped.map(x => healthCard(x.s, x.i, services)).join('')}
+        </div>` : ''}`;
+  }
+
+  function openNodeDetail(id) {
+    const n = SYSTEM_MAP.nodes.find(x => x.id === id);
+    if (!n) return;
+    const services = (lastServiceHealth || {}).services || [];
+    const { worst, bound } = nodeStatus(n, services);
+    const col = nodeColor(worst);
+    const deps = dependentsOf(id).map(d => (SYSTEM_MAP.nodes.find(x => x.id === d) || {}).label).filter(Boolean);
+
+    document.getElementById('metricTitle').textContent = n.label;
+    document.getElementById('metricSub').textContent = n.sub;
+    document.getElementById('metricBody').innerHTML = `
+      <div class="modal-section-title" style="padding-top:0;border-top:none;">Right now</div>
+      ${bound.length ? `
+        <div class="table-wrap"><table>
+          <thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead>
+          <tbody>${bound.map(s => `<tr>
+            <td>${escapeHtml(s.name)}</td>
+            <td><span style="color:${s.byDesign ? 'var(--muted)' : (SERVICE_HEALTH_COLORS[s.status] || 'var(--muted)')};font-weight:700;">${SERVICE_HEALTH_LABELS[s.status] || s.status}</span>${s.byDesign ? ' <span style="color:var(--muted);font-size:11px;">· by design</span>' : ''}</td>
+            <td>${escapeHtml(s.detail || '—')}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>`
+      : `<div style="font-size:12px;color:var(--muted);line-height:1.6;">Not health-checked. Nothing on this page can tell you whether it is up — check it directly at the address below.</div>`}
+
+      <div class="modal-section-title">What it is</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--text);">${escapeHtml(n.what)}</div>
+
+      <div class="modal-section-title" style="color:${col};">If it fails</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--text);">${escapeHtml(n.dies)}</div>
+      ${deps.length ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);line-height:1.6;">
+        <b>Takes down with it:</b> ${escapeHtml(deps.join(', '))}</div>` : ''}
+
+      <div class="modal-section-title" style="color:var(--green);">What keeps working</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--text);">${escapeHtml(n.survives || '—')}</div>
+
+      <div class="modal-section-title">How to fix it</div>
+      <ol style="margin:0;padding-left:20px;font-size:12.5px;line-height:1.7;color:var(--text);">
+        ${(n.fix || []).map(f => `<li style="margin-bottom:6px;">${escapeHtml(f)}</li>`).join('')}
+      </ol>
+      ${n.where ? `<div style="margin-top:12px;font-size:12px;color:var(--muted);"><b>Where:</b> <span class="mono">${escapeHtml(n.where)}</span></div>` : ''}
+    `;
+    document.getElementById('metricModal').classList.remove('hidden');
+  }
 
   function healthCard(s, i, services) {
     const byDesign = !!s.byDesign;
@@ -1197,48 +1505,6 @@
       </div>`;
   }
 
-  function healthBand(stage, services, arrow) {
-    const inStage = services.map((s, i) => ({ s, i })).filter(x => x.s.stage === stage.key);
-    if (!inStage.length) return '';
-    const worst = inStage.reduce((n, x) => Math.max(n, x.s.byDesign ? 0 : (sevRank[x.s.status] || 0)), 0);
-    const edge = worst >= 3 ? 'var(--red)' : worst === 2 ? 'var(--amber)' : 'var(--border)';
-    return `
-      <div style="border-left:3px solid ${edge};padding-left:12px;margin-bottom:${arrow ? '6px' : '18px'};">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
-          <span class="mono" style="font-size:11px;letter-spacing:1.2px;color:var(--text);font-weight:700;">${stage.title}</span>
-          <span style="font-size:11px;color:var(--muted);">${stage.note}</span>
-        </div>
-        <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:0;">
-          ${inStage.map(x => healthCard(x.s, x.i, services)).join('')}
-        </div>
-      </div>
-      ${arrow ? '<div style="color:var(--muted);font-size:15px;margin:0 0 6px 14px;line-height:1;">&darr;</div>' : ''}`;
-  }
-
-  function renderHealthFlow(services) {
-    const placed = new Set([...HEALTH_STAGES, ...HEALTH_ASIDES].map(g => g.key));
-    const orphans = services.map((s, i) => ({ s, i })).filter(x => !placed.has(x.s.stage));
-    const money = HEALTH_STAGES.map((st, n) => healthBand(st, services, n < HEALTH_STAGES.length - 1)).join('');
-    const asides = HEALTH_ASIDES.map(st => healthBand(st, services, false)).join('');
-    return `
-      ${money}
-      <!-- The one fact worth standing above every outage on this page: the
-           stops are at the exchange, not in any box listed here. -->
-      <div style="border-left:3px solid var(--green);padding:9px 12px;margin:0 0 22px 0;font-size:11.5px;line-height:1.55;color:var(--muted);">
-        <b style="color:var(--green);">Resting stops survive all of the above.</b>
-        Every tracked position carries a Forever order sitting at Dhan for 365 days. If every service on
-        this page failed at once, those stops would still be at the exchange and would still fire. What
-        stops is <i>new</i> entries, algo bookings, and trailing.
-      </div>
-      ${asides}
-      ${orphans.length ? `
-        <div style="border-left:3px solid var(--border);padding-left:12px;">
-          <div class="mono" style="font-size:11px;letter-spacing:1.2px;color:var(--muted);margin-bottom:8px;">OTHER</div>
-          <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:0;">
-            ${orphans.map(x => healthCard(x.s, x.i, services)).join('')}
-          </div>
-        </div>` : ''}`;
-  }
   // Total project cost — see computeTotalCost() in server.js for the full
   // reasoning. Short version: DigitalOcean is the only provider here with a
   // real billing API, so its line is marked 'api'; everything else (Render,
