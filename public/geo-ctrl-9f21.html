@@ -1266,7 +1266,7 @@
         where: 'dashboard.render.com',
       },
       {
-        id: 'supabase', row: 4, cx: 300, label: 'Supabase', sub: 'ledger + daily bars',
+        id: 'supabase', row: 4, cx: 260, label: 'Supabase', sub: 'ledger + daily bars',
         checks: ['Supabase (DB)'],
         what: 'The Postgres database. Holds the position ledger (what the algo believes it owns), the daily and intraday bars, users, and the order log. Shared between local development and production — there is only one.',
         dies: 'The sweep can read nothing, so it decides nothing. Same practical effect as Render being down.',
@@ -1293,7 +1293,7 @@
         where: 'cloud.digitalocean.com',
       },
       {
-        id: 'notify', row: 4, cx: 880, label: 'Email & SMS', sub: 'Resend · Brevo · MSG91',
+        id: 'notify', row: 4, cx: 980, label: 'Email & SMS', sub: 'Resend · Brevo · MSG91',
         checks: ['Resend (email)', 'Brevo (broadcasts)', 'MSG91 (SMS)'],
         what: 'Resend sends sign-in OTPs and the ops alarms. Brevo sends marketing broadcasts. MSG91 would send SMS but was deliberately never funded — OTP is email-only by choice, so its zero balance is the expected steady state and not a fault.',
         dies: 'If Resend is capped (100/day, free), nobody NEW can sign in, because it is the only OTP channel. Existing sessions continue. You also stop receiving ops alarm mail, which means a later failure gets no shout.',
@@ -1306,7 +1306,7 @@
         where: 'resend.com',
       },
       {
-        id: 'ingest', row: 5, cx: 170, label: 'Bhavcopy ingest', sub: 'NSE 17:35/19:35 · MCX',
+        id: 'ingest', row: 5, cx: 110, label: 'Bhavcopy ingest', sub: 'NSE 17:35/19:35 · MCX',
         checks: ['Ingest runners (NSE)', 'NSE data (bhavcopy)', 'MCX data (bhavcopy)'],
         what: 'The evening jobs that fetch the exchange end-of-day files and write the daily bars. NSE runs primarily from the relay box on a systemd timer (17:35 and 19:35 IST) with GitHub Actions as a late backup; MCX still runs on GitHub Actions only.',
         dies: 'Daily bars go stale. Entries then pause on their own — the staleness gate refuses to compute geometry on a gapped series, which is deliberate. Exits keep running.',
@@ -1321,7 +1321,22 @@
         where: 'GitHub Actions · relay systemd',
       },
       {
-        id: 'r2', row: 5, cx: 400, label: 'Cloudflare R2', sub: 'deep history archive',
+        id: 'backups', row: 5, cx: 530, label: 'Backups', sub: 'nightly dump on the relay',
+        checks: ['Supabase backup'],
+        what: 'Supabase\'s Free plan has no automatic backups and no point-in-time recovery, so a nightly job on the relay droplet at 21:30 IST is the backup system. It dumps every table that cannot be rebuilt — the position ledger first, then users and payments — and keeps the last fourteen. NSE daily bars are skipped on purpose: they are a copy of a public exchange archive that backfill.js can rebuild for any date range.',
+        dies: 'Nothing stops and nothing is lost today. What you lose is the safety net: if Supabase went down while this is red, you would fall back to whatever the last good dump holds, and everything after it is gone.',
+        survives: 'All of it. This is the only box on the map whose failure costs nothing on the day it happens — which is exactly why it has to be visible while it is still cheap to fix.',
+        fix: [
+          'ssh root@159.89.166.18 "systemctl list-timers geo-backup; journalctl -u geo-backup -n 40"',
+          'Run one now: systemctl start geo-backup.service',
+          'If it fails on auth, the Supabase service-role key in /opt/geo-backup/.env has been rotated. That breaks this job silently and is the most likely cause.',
+          'If it fails on space: df -h. Fourteen dumps are small, but the droplet also holds the ingest.',
+          'The dump holds phone numbers, payments, the ledger and the encrypted Dhan token. A leaked copy is a broker incident — rotate the Dhan token first.',
+        ],
+        where: 'relay droplet, /opt/geo-backup',
+      },
+      {
+        id: 'r2', row: 5, cx: 320, label: 'Cloudflare R2', sub: 'deep history archive',
         checks: ['Cloudflare R2 (deep history)'],
         what: 'Thirty years of end-of-day bars, spliced in underneath Supabase to power MAX-range charts without paying for that much Postgres.',
         dies: 'MAX-range charts silently fall back to roughly the last two years. Shorter, never wrong.',
@@ -1330,7 +1345,7 @@
         where: 'dash.cloudflare.com',
       },
       {
-        id: 'dhan', row: 5, cx: 620, label: 'Dhan', sub: 'the broker',
+        id: 'dhan', row: 5, cx: 740, label: 'Dhan', sub: 'the broker',
         what: 'The broker. Holds the real money, the real positions, and every resting Forever order. Reads work from anywhere; WRITES are accepted only from the whitelisted relay IP.',
         dies: 'Nothing can be placed, changed or cancelled, by the algo or by you. Positions are frozen as they stand.',
         survives: 'Resting stops are stored on Dhan\'s side and at the exchange, so they still stand — but if Dhan itself is fully down, nothing is going through in either direction. This is the one box on the map with no fallback.',
@@ -1342,20 +1357,26 @@
         where: 'dhan.co',
       },
       {
-        id: 'exchange', row: 6, cx: 620, label: 'NSE', sub: 'the exchange — stops live here',
+        id: 'exchange', row: 6, cx: 740, label: 'NSE', sub: 'the exchange — stops live here',
         what: 'Where the resting Forever orders actually sit, with a 365-day life. This is the bottom of the map on purpose: it is the only layer that protects you without depending on anything above it.',
         dies: 'If the exchange is down, the market is closed and nobody is trading.',
         survives: 'n/a — this is the floor.',
         fix: ['Nothing to fix. Keep every tracked position carrying a resting stop, and this layer keeps working even if every other box on this page is dark.'],
       },
     ],
-    // [above, below] — "above needs below"
+    // [above, below] — "above needs below". A third element 'protects' marks
+    // the exception: Supabase does not NEED its backups to run, and drawing
+    // that as a dependency would state something false on a page whose whole
+    // job is to be trusted during an incident. Those are drawn dashed and
+    // without an arrow, and are excluded from blast-radius entirely — if the
+    // backup stops, nothing above it falls over.
     edges: [
       ['domain', 'website'], ['domain', 'app'],
       ['website', 'vercel-site'], ['app', 'vercel-app'],
       ['vercel-app', 'render'],
       ['render', 'supabase'], ['render', 'relay'], ['render', 'notify'],
       ['supabase', 'ingest'], ['supabase', 'r2'],
+      ['supabase', 'backups', 'protects'],
       ['relay', 'dhan'], ['dhan', 'exchange'],
     ],
   };
@@ -1365,6 +1386,9 @@
   // 34px channel between boxes, which every edge routes through.
   const NODE_W = 200, NODE_H = 50, ROW_Y = r => 14 + r * 84;
   const MAP_H = ROW_Y(6) + NODE_H + 14;
+  // Widened from 1080 when Backups became a fourth box on row 5. One constant
+  // so the viewBox, the intrinsic width and the bounds test cannot disagree.
+  const MAP_W = 1260;
 
   // Worst live status across every check a node owns. byDesign states are
   // scored zero so a deliberately-empty MSG91 cannot paint a box red.
@@ -1382,7 +1406,13 @@
     const out = new Set(); const stack = [id];
     while (stack.length) {
       const cur = stack.pop();
-      SYSTEM_MAP.edges.forEach(([a, b]) => { if (b === cur && !out.has(a)) { out.add(a); stack.push(a); } });
+      SYSTEM_MAP.edges.forEach(([a, b, kind]) => {
+        // 'protects' is not a dependency: losing the backups does not take
+        // Supabase down with it, and saying so would be a lie told at the
+        // moment someone is least able to check it.
+        if (kind === 'protects') return;
+        if (b === cur && !out.has(a)) { out.add(a); stack.push(a); }
+      });
     }
     return [...out];
   }
@@ -1401,11 +1431,16 @@
     </g>`;
   }
 
-  function edgeSvg(a, b) {
+  function edgeSvg(a, b, kind) {
     const y1 = ROW_Y(a.row) + NODE_H, y2 = ROW_Y(b.row), my = y1 + (y2 - y1) / 2;
     const d = a.cx === b.cx
       ? `M${a.cx} ${y1} V${y2 - 7}`
       : `M${a.cx} ${y1} V${my} H${b.cx} V${y2 - 7}`;
+    // A 'protects' line gets no arrowhead and a dashed stroke: an arrow would
+    // read as "depends on", which is the one thing it must not say.
+    if (kind === 'protects') {
+      return `<path d="${d}" style="fill:none;stroke:var(--muted);stroke-opacity:.4;stroke-width:1.5;stroke-dasharray:5 4;"></path>`;
+    }
     // --border is too dark against --bg to read as a line at this weight, and
     // the arrowheads carry the whole "which way does this dependency point"
     // question, so both are drawn in muted rather than border.
@@ -1416,10 +1451,10 @@
     const byId = {}; SYSTEM_MAP.nodes.forEach(n => { byId[n.id] = n; });
     const svg = `
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <svg class="sysmap" viewBox="0 0 1080 ${MAP_H}" width="1080" height="${MAP_H}">
+        <svg class="sysmap" viewBox="0 0 ${MAP_W} ${MAP_H}" width="${MAP_W}" height="${MAP_H}">
           <defs><marker id="fArrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto">
             <path d="M0 0 L8 4 L0 8 z" style="fill:var(--muted);fill-opacity:.75;"></path></marker></defs>
-          ${SYSTEM_MAP.edges.map(([a, b]) => edgeSvg(byId[a], byId[b])).join('')}
+          ${SYSTEM_MAP.edges.map(([a, b, kind]) => edgeSvg(byId[a], byId[b], kind)).join('')}
           ${SYSTEM_MAP.nodes.map(n => nodeSvg(n, services)).join('')}
         </svg>
       </div>`;
@@ -1433,8 +1468,9 @@
 
     return `
       <div style="font-size:11.5px;color:var(--muted);line-height:1.55;margin:0 0 8px;">
-        A line means <b style="color:var(--text);">the box above needs the box below</b>. Click any box for what
-        breaks and how to fix it. Dashed = not health-checked.
+        A line means <b style="color:var(--text);">the box above needs the box below</b>; a dashed line means
+        <b style="color:var(--text);">protects, not needs</b>. Click any box for what breaks and how to fix it.
+        A dashed <i>box</i> is not health-checked.
       </div>
       ${svg}
       <div style="border-left:3px solid var(--green);padding:9px 12px;margin:14px 0 18px;font-size:11.5px;line-height:1.55;color:var(--muted);">
