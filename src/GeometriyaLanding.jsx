@@ -479,8 +479,13 @@ const TOOL_GROUPS = [
 ];
 
 // ── Backend API base URL ──
-// Live backend, deployed on Render.
-const API_BASE_URL = 'https://geometriya-backend-render.onrender.com';
+// From the build environment, falling back to production. Less critical here
+// than in the app — a website redeploy re-points this instantly, whereas the
+// same value compiled into an APK is stuck for good — but kept in step with
+// it so the two never disagree about where the API lives.
+// The fallback moves to api.geometricalanalysis.com once that host is serving;
+// Render answers on both, so nothing has to change in lockstep.
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://geometriya-backend-render.onrender.com';
 
 // ── Cloudflare Turnstile site key (signup bot gate). SITE keys are public by
 //    design — they ship in the page for anyone to read — so hardcoding is
