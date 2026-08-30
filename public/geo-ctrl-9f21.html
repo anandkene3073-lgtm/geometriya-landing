@@ -3,6 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- This page is served from the public marketing site, so the only thing
+     keeping it private is that nobody knows the filename. That is a speed
+     bump, not access control — a URL leaks through browser sync, a referrer
+     header, a shared screenshot. noindex at least keeps it out of search
+     results, so a leak has to be deliberate rather than accidental.
+     Paired with an X-Robots-Tag header in vercel.json (a meta tag only helps
+     crawlers that fetch and parse the HTML) and Referrer-Policy: no-referrer,
+     so following a link out of this page cannot leak its URL.
+
+     None of that is real access control. The proper fix is to stop serving
+     this from the public site at all — either open it from a local file, or
+     put it on a subdomain behind Vercel password protection / Cloudflare
+     Access. Everything here still requires ADMIN_SECRET to DO anything; what
+     is exposed without it is the shape of the API and the fact that this
+     console exists. -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <title>Geometriya — Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1015,8 +1031,34 @@
 </div>
 
 <script>
+  // API_BASE stays in localStorage — it is a convenience, not a secret.
+  //
+  // ADMIN_KEY does NOT. It is the single credential that can delete users,
+  // change subscriptions and mail every contact on the list, and localStorage
+  // kept it on disk indefinitely, readable by any script on this origin. This
+  // page is served from the public marketing site, which also loads a webfont
+  // stylesheet from a third party, so "any script on this origin" is not a
+  // hypothetical set. sessionStorage narrows it to the life of the tab: close
+  // the browser and the key is gone.
+  //
+  // The cost is retyping the key once per session. For a credential that can
+  // delete a customer, that is the right side of the trade. (Revert both lines
+  // to localStorage if the friction proves worse than it sounds.)
   let API_BASE = localStorage.getItem('geo_admin_api_base') || 'http://localhost:3000';
-  let ADMIN_KEY = localStorage.getItem('geo_admin_key') || '';
+  // One-time migration off disk. Anyone who used this page before now has the
+  // key sitting in localStorage; switching where we READ from would leave that
+  // copy there forever, which is the exact thing being fixed. Move it, then
+  // delete it. Safe to keep indefinitely — it no-ops once no old copy exists.
+  (() => {
+    try {
+      const stale = localStorage.getItem('geo_admin_key');
+      if (stale) {
+        if (!sessionStorage.getItem('geo_admin_key')) sessionStorage.setItem('geo_admin_key', stale);
+        localStorage.removeItem('geo_admin_key');
+      }
+    } catch { /* storage disabled — nothing to migrate */ }
+  })();
+  let ADMIN_KEY = sessionStorage.getItem('geo_admin_key') || '';
   let currentTab = 'active';
   let allUsers = { active: [], deactivated: [], paid: [] };
   // Default: newest signups first. The question this table gets opened with
@@ -1087,7 +1129,7 @@
     try {
       await apiCall('/api/admin/users');
       localStorage.setItem('geo_admin_api_base', API_BASE);
-      localStorage.setItem('geo_admin_key', ADMIN_KEY);
+      sessionStorage.setItem('geo_admin_key', ADMIN_KEY);   // tab-lifetime only — see the note at the top of this script
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('dashboard').classList.remove('hidden');
       document.getElementById('apiIndicator').textContent = API_BASE.replace(/^https?:\/\//, '');
@@ -1099,6 +1141,10 @@
   }
 
   function logout() {
+    sessionStorage.removeItem('geo_admin_key');
+    // Also clear any key left behind by a version of this page that stored it
+    // on disk, so signing out actually ends it rather than leaving the old
+    // copy sitting there for the next person to open the page.
     localStorage.removeItem('geo_admin_key');
     ADMIN_KEY = '';
     document.getElementById('dashboard').classList.add('hidden');
