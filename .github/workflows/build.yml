@@ -1,0 +1,55 @@
+# Build on every push and pull request.
+#
+# The build here is not just `vite build` — it also renders both routes to
+# static HTML (see scripts/prerender.mjs), and that step is deliberately
+# NON-FATAL: if prerendering fails it logs and exits 0 so a deploy is never lost
+# to an SEO enhancement. Which means a silently broken prerender would not fail
+# the build either, so this checks the OUTPUT rather than the exit code.
+#
+# The assertion is that dist/index.html contains real content and not the empty
+# <div id="root"></div> shell the site used to serve every crawler. That is the
+# only thing distinguishing a working prerender from a skipped one, and it is
+# exactly what would rot unnoticed.
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: prerender actually produced content
+        run: |
+          node -e "
+            const fs = require('fs');
+            const strip = h => h
+              .replace(/<!--[\s\S]*?-->/g, '')
+              .replace(/<script[\s\S]*?<\/script>/g, '')
+              .replace(/<style[\s\S]*?<\/style>/g, '')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            let bad = 0;
+            for (const [name, path] of [['/', 'dist/index.html'], ['/privacy', 'dist/privacy/index.html']]) {
+              if (!fs.existsSync(path)) { console.error('MISSING ' + path); bad++; continue; }
+              const len = strip(fs.readFileSync(path, 'utf8')).length;
+              // The empty shell strips to roughly nothing; the real pages are
+              // thousands of characters. 1000 is far below either real page and
+              // far above an empty one, so it cannot pass by accident.
+              console.log(name.padEnd(9) + len + ' chars of crawlable text');
+              if (len < 1000) { console.error('  ^ that is the empty shell — prerendering did not run'); bad++; }
+            }
+            process.exit(bad ? 1 : 0);
+          "
