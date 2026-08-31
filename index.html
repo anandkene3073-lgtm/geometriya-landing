@@ -42,6 +42,51 @@
     <meta name="twitter:description" content="A unique method that draws geometry directly on your charts to spot turning points before they happen. Free 30-day trial, then free forever." />
     <meta name="twitter:image" content="https://www.geometricalanalysis.com/og-card.png" />
 
+    <!-- Structured data. Static, not generated from the page, so it must stay
+         limited to facts that do not drift: who we are and what the product is.
+         Deliberately NO Offer and NO aggregateRating — prices come from
+         /api/payment/plan-info at runtime and there are no collected reviews,
+         so either would be markup asserting something the page does not show.
+         Mismatched structured data is penalised, not ignored.
+         An FAQPage block is also deliberately absent: the FAQ lives in
+         GeometriyaLanding.jsx, and a hand-copied duplicate here would silently
+         stop matching it the first time the copy is edited. Worth adding only
+         if it is generated from the same source. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://www.geometricalanalysis.com/#organization",
+          "name": "Geometriya",
+          "alternateName": "Geometrical Analysis",
+          "url": "https://www.geometricalanalysis.com/",
+          "logo": "https://www.geometricalanalysis.com/logo.png",
+          "email": "geometriya.analysis@gmail.com",
+          "areaServed": "IN"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.geometricalanalysis.com/#website",
+          "url": "https://www.geometricalanalysis.com/",
+          "name": "Geometriya",
+          "publisher": { "@id": "https://www.geometricalanalysis.com/#organization" },
+          "inLanguage": "en-IN"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Geometriya",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web, Android",
+          "url": "https://app.geometricalanalysis.com/",
+          "publisher": { "@id": "https://www.geometricalanalysis.com/#organization" },
+          "description": "A charting platform built on Mitotic Scaling — geometry drawn directly on price charts, with Dream-45 angles, Gann tools and Elliott wave counting for NSE stocks."
+        }
+      ]
+    }
+    </script>
+
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png" />
