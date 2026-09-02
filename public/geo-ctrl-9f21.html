@@ -699,7 +699,14 @@
       <label for="apiBaseInput">Backend URL</label>
       <input id="apiBaseInput" type="text" placeholder="http://localhost:3000" />
       <label for="adminKeyInput">Admin key</label>
-      <input id="adminKeyInput" type="password" placeholder="••••••••••••" />
+      <input id="adminKeyInput" type="password" placeholder="••••••••••••" autocomplete="off" />
+      <!-- The key alone no longer opens anything (2-Sep, SA-06): the server
+           also wants a Geometriya session belonging to an operator account.
+           Same credentials as the app; the session lives for this tab. -->
+      <label for="adminIdentInput">Your Geometriya email or phone</label>
+      <input id="adminIdentInput" type="text" placeholder="operator@example.com" autocomplete="username" />
+      <label for="adminPassInput">Your Geometriya password</label>
+      <input id="adminPassInput" type="password" placeholder="••••••••••••" autocomplete="current-password" />
       <button class="btn btn-accent" style="width:100%; padding:12px;" onclick="login()">Sign in</button>
     </div>
   </div>
@@ -1059,6 +1066,10 @@
     } catch { /* storage disabled — nothing to migrate */ }
   })();
   let ADMIN_KEY = sessionStorage.getItem('geo_admin_key') || '';
+  // The operator's own Geometriya session — the second lock (SA-06). Tab
+  // lifetime, like the key; { phone, token }.
+  let ADMIN_SESSION = null;
+  try { ADMIN_SESSION = JSON.parse(sessionStorage.getItem('geo_admin_session') || 'null'); } catch { ADMIN_SESSION = null; }
   let currentTab = 'active';
   let allUsers = { active: [], deactivated: [], paid: [] };
   // Default: newest signups first. The question this table gets opened with
@@ -1103,11 +1114,20 @@
   async function apiCall(path, opts = {}) {
     const res = await fetch(API_BASE + path, {
       ...opts,
-      headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      headers: {
+        'x-admin-key': ADMIN_KEY,
+        ...(ADMIN_SESSION?.phone && ADMIN_SESSION?.token
+          ? { 'x-admin-phone': ADMIN_SESSION.phone, 'x-admin-token': ADMIN_SESSION.token } : {}),
+        'Content-Type': 'application/json', ...(opts.headers || {}),
+      },
     });
     if (res.status === 401) {
       logout();
       throw new Error('Session expired — please sign in again.');
+    }
+    if (res.status === 403) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error || 'Refused.');
     }
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
@@ -1120,16 +1140,29 @@
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
 
-    if (!API_BASE || !ADMIN_KEY) {
-      errEl.textContent = 'Enter both the backend URL and your admin key.';
+    const ident = document.getElementById('adminIdentInput').value.trim();
+    const pass = document.getElementById('adminPassInput').value;
+    if (!API_BASE || !ADMIN_KEY || !ident || !pass) {
+      errEl.textContent = 'Enter the backend URL, your admin key, and your own Geometriya sign-in.';
       errEl.style.display = 'block';
       return;
     }
 
     try {
+      // Second lock first: a Geometriya session for an operator account. The
+      // password never goes anywhere but /api/auth/signin, and is not kept.
+      const s = await fetch(API_BASE + '/api/auth/signin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: ident, password: pass }),
+      });
+      const sj = await s.json().catch(() => ({}));
+      if (!s.ok || !sj.token) throw new Error(sj.error || 'Geometriya sign-in failed.');
+      ADMIN_SESSION = { phone: sj.phone, token: sj.token };
+      document.getElementById('adminPassInput').value = '';
       await apiCall('/api/admin/users');
       localStorage.setItem('geo_admin_api_base', API_BASE);
       sessionStorage.setItem('geo_admin_key', ADMIN_KEY);   // tab-lifetime only — see the note at the top of this script
+      sessionStorage.setItem('geo_admin_session', JSON.stringify(ADMIN_SESSION));
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('dashboard').classList.remove('hidden');
       document.getElementById('apiIndicator').textContent = API_BASE.replace(/^https?:\/\//, '');
@@ -1142,6 +1175,8 @@
 
   function logout() {
     sessionStorage.removeItem('geo_admin_key');
+    sessionStorage.removeItem('geo_admin_session');
+    ADMIN_SESSION = null;
     // Also clear any key left behind by a version of this page that stored it
     // on disk, so signing out actually ends it rather than leaving the old
     // copy sitting there for the next person to open the page.
