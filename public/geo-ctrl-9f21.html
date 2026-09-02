@@ -1348,7 +1348,7 @@
       },
       {
         id: 'supabase', row: 4, cx: 260, label: 'Supabase', sub: 'ledger + daily bars',
-        checks: ['Supabase (DB)'],
+        checks: ['Supabase (DB)', 'Supabase (egress)'],
         what: 'The Postgres database. Holds the position ledger (what the algo believes it owns), the daily and intraday bars, users, and the order log. Shared between local development and production — there is only one.',
         dies: 'The sweep can read nothing, so it decides nothing. Same practical effect as Render being down.',
         survives: 'Resting stops at Dhan, entirely.',
@@ -1356,6 +1356,9 @@
           'status.supabase.com first — if it is their outage, there is nothing to do but wait.',
           'The free plan stops at 500 MB and the database goes READ-ONLY when it is reached. Read-only is the dangerous state: the sweep appears alive but cannot record a fill, which is how a ledger drifts from reality. Watch the percentage on the tile and prune or upgrade BEFORE it arrives.',
           'Never repair the ledger with a raw UPDATE. persist() rewrites the whole ledger each sweep and will restore whatever you deleted. Use the ⨯ untrack button in the app.',
+          'EGRESS is a second, separate ceiling — 5 GB a month across BOTH projects, because the allowance belongs to the organisation and not the project. August 2026 ended at 6.41 GB, which starts a grace period; exceed it again and every request returns 402, which is the same practical outcome as the database being down. The tile grades the run rate, not the total so far, so it turns amber while the month can still be saved.',
+          'The egress figure is counted by the backend itself (egress-meter.js) and persisted daily, because Supabase publishes no organisation usage API. It is a floor: reads made by anything other than this server are invisible to it. The dashboard at supabase.com/dashboard/org/abelnkpyxrakvgwwxocn/usage remains the authoritative number.',
+          'For the per-table breakdown — which table is actually spending it — call /api/admin/egress.',
         ],
         where: 'supabase.com/dashboard',
       },
