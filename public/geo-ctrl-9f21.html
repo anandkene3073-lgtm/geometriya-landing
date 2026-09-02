@@ -1348,7 +1348,7 @@
       },
       {
         id: 'supabase', row: 4, cx: 260, label: 'Supabase', sub: 'ledger + daily bars',
-        checks: ['Supabase (DB)', 'Supabase (egress)'],
+        checks: ['Supabase (DB)', 'Supabase (egress)', 'Supabase (token)'],
         what: 'The Postgres database. Holds the position ledger (what the algo believes it owns), the daily and intraday bars, users, and the order log. Shared between local development and production — there is only one.',
         dies: 'The sweep can read nothing, so it decides nothing. Same practical effect as Render being down.',
         survives: 'Resting stops at Dhan, entirely.',
