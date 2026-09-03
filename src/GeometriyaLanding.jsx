@@ -1435,7 +1435,12 @@ export default function GeometriyaLanding() {
             Two answers to the only<br />two questions that matter.
           </h2>
           <p style={{ color: RD.inkDim, fontSize: 17, lineHeight: 1.65 }}>
-            Which stocks are worth looking at today &mdash; and how do I know any of this actually works?
+            {/* The second question changed with the product. It used to be
+                "how do I know this works", answered by a strategy trading a
+                practice book for you. Paper trading is your own hands now, so
+                the honest question it answers is whether YOU can work the
+                method — which is the more useful one anyway. */}
+            Which stocks are worth looking at today &mdash; and can I practise the method before any real money is on it?
           </p>
         </div>
         <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -1481,45 +1486,52 @@ export default function GeometriyaLanding() {
           {/* ── Paper trading ── */}
           <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '34px 30px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <RdCorners />
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#6FA0FF' }}>⚡ LIVE ALGO &middot; PAPER MONEY</div>
+            {/* REWRITTEN 3-Sep-2026, and the reason matters more than the
+                words. This panel used to say a strategy traded a practice
+                book from our servers every five minutes, that you could
+                close the laptop and it would keep going, and that your book
+                and the strategy's could be scored against each other. All of
+                that was true until the client paper algo was retired that
+                morning (see backend/server-paper.js) and none of it was true
+                afterwards. Copy describing a feature that no longer exists is
+                not stale, it is a false claim about a financial product — so
+                every line below is one the app can be held to today. */}
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#6FA0FF' }}>📓 PAPER TRADE &middot; PRACTICE MONEY</div>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
-              Watch a strategy trade live.<br />Before you risk a rupee.
+              Practise the method.<br />Before you risk a rupee.
             </div>
             <div style={{ fontSize: 14.5, lineHeight: 1.65, color: RD.inkDim }}>
-              Switch the algo on and it starts trading a ₹10,00,000 practice book on real NSE prices
-              &mdash; from our servers, every five minutes the market is open. No broker. No deposit.
-              Close the laptop and it keeps going. Come back to exactly what it bought, when, and why.
+              Start with a ₹10,00,000 practice book and place your own trades at real NSE prices.
+              No broker. No deposit. Nothing to install. Positions are valued at each day&rsquo;s
+              close, so what you come back to is a scorecard you can study &mdash; not a ticker
+              to sit in front of.
             </div>
-            {/* The moment that sells it: switching it on costs nothing and
-                needs nobody. Verified in backend/server-paper.js — the sweep
-                takes every account with the algo enabled and uses a
-                server-side data token, so a visitor with no broker genuinely
-                gets live algo trades. (The site used to claim the opposite,
-                written back when the engine ran in the browser.) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(111,160,255,.07)', border: '1px solid rgba(111,160,255,.3)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, flexWrap: 'wrap' }}>
-              <span style={{ color: RD.green, fontWeight: 700 }}>▶ ALGO ON</span>
+              <span style={{ color: RD.green, fontWeight: 700 }}>📓 PRACTICE BOOK</span>
               <span style={{ color: RD.ink, fontWeight: 700 }}>₹10,00,000</span>
               <span style={{ color: RD.inkFaint }}>practice money — not real</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, lineHeight: 1.55, color: RD.inkDim }}>
-              {['No broker, no deposit, nothing to install — sign up, pick a list, press start, and it is trading.',
-                'Every trade is stamped with the strategy that placed it and the price it paid, so you can judge the method on its own record.',
-                'Your trades and the strategy’s stay in separate books with separate scorecards — see who is actually trading better.',
+              {/* Each of these is checkable against the app: the three fill
+                  sources and the recorded source are paper-fill.js; the
+                  end-of-day mark is paperLastClose; charges are
+                  paperCharges; reset counting is the attempt counter. */}
+              {['You name the price. Your broker’s live price if you connect one, a price you type, or the last close — and every fill records which of the three it was.',
+                'Realistic charges on both sides, so the number you end with is the number you would really have ended with.',
+                'Open positions are marked at the closing price, the same one the exchange published — no invented mid-day valuations.',
                 'Start again whenever you like — resets are counted openly, never quietly erased.'].map((t, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10 }}>
                   <span style={{ color: '#6FA0FF', flexShrink: 0 }}>✓</span><span>{t}</span>
                 </div>
               ))}
             </div>
-            {/* The remaining broker nuance, stated honestly and turned into a
-                next step rather than a barrier: trades fill at real prices
-                regardless, but OPEN positions are marked at the last stored
-                close until a broker supplies live quotes (the app labels
-                those rows "at last close"). */}
+            {/* The broker question, answered as a choice rather than a
+                barrier: nothing here needs one, and connecting yours buys a
+                live chart and a live price to trade against. */}
             <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12, marginTop: 'auto' }}>
-              Trades fill at real NSE prices with realistic charges either way. Connect a broker later
-              &mdash; free, one tap &mdash; and open positions mark against live prices instead of the
-              last close.
+              Want a live chart and a live price to trade against? Connect your own broker
+              &mdash; free, one tap. Without one, the last published close stands in, and
+              nothing else changes.
             </div>
           </div>
         </div>
