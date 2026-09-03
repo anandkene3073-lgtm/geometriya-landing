@@ -1333,7 +1333,7 @@
       },
       {
         id: 'render', row: 3, cx: 620, label: 'Render', sub: 'backend + the 5-min sweep',
-        checks: ['Render (hosting)'],
+        checks: ['Render (hosting)', 'CORS allowlist'],
         what: 'The Node/Express backend, and with it the 5-minute sweep — the loop that reads the ledger, replays the geometry, and decides entries, exits and stop trailing. This is the engine. Paid Starter tier, always-on, no spin-down.',
         dies: 'Trading stops deciding: no new entries, no algo bookings, no trailing of stops to new levels. The app loads but every panel is empty. This is the most serious box on the map.',
         survives: 'Every resting Forever stop already placed at Dhan. They are orders sitting at the exchange with a 365-day life and they do not need Render, or anything else here, to fire. A position with a resting stop is still floored while this is down.',
