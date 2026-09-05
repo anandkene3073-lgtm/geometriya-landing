@@ -818,14 +818,18 @@ const nationalNumberOk = (code, local) => {
 // phone — every session, ledger row and billing decision is keyed on the
 // phone, so the number is asked first on both paths. The client ID is public
 // by design (it ships in the page); only the secret on Render matters. The
-// OAuth client's AUTHORISED ORIGINS must list this site — www and apex
-// geometricalanalysis.com, and http://localhost:5174 for local work — or
-// Google refuses the sign-in popup. So the button is OFF until the
-// deployment opts in: set VITE_GOOGLE_CLIENT_ID on Vercel (the app's web
-// client, 463903235383-vtidkg2nok29vfnf9mfrhvj0j0cn9llj.apps.googleusercontent.com)
-// once those origins are added; .env.local carries it for localhost. Empty
-// means the card offers email + password only, and the steps say so.
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+// The app's own "Geometriya web" OAuth client, shared so one Google account
+// resolves to one Geometriya account whichever surface signs in. SITE ids are
+// public by design (they ship in the page); only the secret, on Render, is
+// sensitive — so this is hardcoded rather than left to a Vercel setting a
+// redeploy could forget. Its AUTHORISED ORIGINS were extended on 5-Sep-2026
+// to www + apex geometricalanalysis.com and http://localhost:5174; Google
+// refuses the sign-in popup from any origin not on that list. The env var
+// still wins, so the key can be rotated or the button disabled (set it empty)
+// without a code change — with no id the card offers email + password only,
+// and the steps on the left say so.
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  ?? '463903235383-vtidkg2nok29vfnf9mfrhvj0j0cn9llj.apps.googleusercontent.com';
 
 // Signup card tokens (design 4a).
 const SU = {
