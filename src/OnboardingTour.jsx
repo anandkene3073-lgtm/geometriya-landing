@@ -995,25 +995,34 @@ const waitForVoices = (budgetMs = 4000) => new Promise(resolve => {
   synth.addEventListener?.('voiceschanged', finish);
 });
 
+// Android reports language tags with an underscore ("en_IN"), the desktop
+// with a hyphen ("en-IN") — normalise before comparing or the Indian voice
+// is never found. Gender tokens need word boundaries too: "Denmark" was
+// matching /mark/ and scoring a Danish voice as male.
+const voiceLang = v => String(v.lang || '').replace('_', '-');
+const isEnglishVoice = v => /^en(-|$)/i.test(voiceLang(v));
+const isIndianEnglish = v => /^en-IN$/i.test(voiceLang(v));
 const pickFallbackVoice = (voices, lang) => {
   // Android's Google TTS names voices "en-in-x-end#male_1-local" and
   // "en-us-x-tpf#female_1-local", so the plain male/female tokens below
   // match there too — the female guard is what stops "female_1" scoring as
   // a male match. Windows and Apple names are covered by the given names.
-  const maleRe = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan|arthur|brian|thomas)/i;
-  const femaleRe = /(female|heera|neerja|swara|kalpana|zira|susan|samantha|veena|aria|jenny|hazel|sonia|natasha)/i;
+  // \b fails against Android's "male_1" (underscore is a word char), so the
+  // token is allowed to run into a digit or underscore explicitly.
+  const maleRe = /(\bmale[_#\d]?|#male|\b(ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan|arthur|brian|thomas)\b)/i;
+  const femaleRe = /(\bfemale|\b(heera|neerja|swara|kalpana|zira|susan|samantha|veena|aria|jenny|hazel|sonia|natasha)\b)/i;
   const notFemale = v => !femaleRe.test(v.name);
+  const isHindi = v => /^hi(-|$)/i.test(voiceLang(v));
   if (lang === 'hi') {
-    return voices.find(v => v.lang === 'hi-IN' && maleRe.test(v.name) && notFemale(v))
-        || voices.find(v => v.lang === 'hi-IN' && notFemale(v))
-        || voices.find(v => v.lang === 'hi-IN')
-        || voices.find(v => v.lang?.startsWith('hi'));
+    return voices.find(v => isHindi(v) && maleRe.test(v.name) && notFemale(v))
+        || voices.find(v => isHindi(v) && notFemale(v))
+        || voices.find(isHindi);
   }
-  return voices.find(v => v.lang === 'en-IN' && maleRe.test(v.name) && notFemale(v))
-      || voices.find(v => v.lang?.startsWith('en') && maleRe.test(v.name) && notFemale(v))
-      || voices.find(v => v.lang === 'en-IN' && notFemale(v))
-      || voices.find(v => v.lang === 'en-IN')
-      || voices.find(v => v.lang?.startsWith('en'));
+  return voices.find(v => isIndianEnglish(v) && maleRe.test(v.name) && notFemale(v))
+      || voices.find(v => isEnglishVoice(v) && maleRe.test(v.name) && notFemale(v))
+      || voices.find(v => isIndianEnglish(v) && notFemale(v))
+      || voices.find(isIndianEnglish)
+      || voices.find(isEnglishVoice);
 };
 
 // `theme` is the app's chartTheme ('light' | 'dark'). It drives both the

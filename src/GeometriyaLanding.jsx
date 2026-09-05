@@ -422,15 +422,23 @@ const TUTOR_CHARS_PER_SEC = 13;
 // Android's Google TTS names voices "en-in-x-end#male_1-local", so the plain
 // male token matches there too; the female guard below is what keeps
 // "female_1" from counting as a male match.
-const TUTOR_MALE_RE = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan|arthur|brian|thomas)/i;
+// \b fails against Android's "male_1" (underscore is a word char), so the
+// token may run into a digit or underscore; word boundaries elsewhere stop
+// "Denmark" from scoring a Danish voice as male.
+const TUTOR_MALE_RE = /(\bmale[_#\d]?|#male|\b(ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan|arthur|brian|thomas)\b)/i;
 const TUTOR_FEMALE_RE = /female/i;
-const isEn = v => /^en[-_]/i.test(v.lang);
+// Android reports "en_IN", the desktop "en-IN" — normalise, or the Indian
+// voice is never matched and selection falls through to whatever English
+// voice happens to be first (Australian, on Anand's phone).
+const voiceLang = v => String(v.lang || '').replace('_', '-');
+const isEn = v => /^en(-|$)/i.test(voiceLang(v));
+const isEnIN = v => /^en-IN$/i.test(voiceLang(v));
 function pickTutorVoice(voices) {
   const male = v => TUTOR_MALE_RE.test(v.name) && !TUTOR_FEMALE_RE.test(v.name);
   return voices.find(v => /david/i.test(v.name) && isEn(v))
-      || voices.find(v => v.lang === 'en-IN' && male(v))
+      || voices.find(v => isEnIN(v) && male(v))
       || voices.find(v => isEn(v) && male(v))
-      || voices.find(v => v.lang === 'en-IN')
+      || voices.find(isEnIN)
       || voices.find(isEn)
       || null;
 }
