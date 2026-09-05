@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import OnboardingTour from "./OnboardingTour.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GEOMETRIYA — MARKETING SITE
@@ -28,7 +29,7 @@ const C = {
 };
 
 const FONTS = `
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 `;
 
 // ── CSS for the animated hero "monitor" mockup (HeroMonitor component below).
@@ -247,7 +248,6 @@ const PAGE_BG = `
   radial-gradient(ellipse 900px 600px at 90% 100%, rgba(47,95,224,0.10), transparent 60%),
   ${C.bg}
 `;
-const CTA_GRADIENT = `linear-gradient(90deg, #4A87FA, ${C.goldDeep})`;
 
 // ── Extra palette + CSS for the redesigned sections below (ticker strip,
 // 4-card method grid, platform-contrast panel, CTA band). Scoped to these
@@ -261,8 +261,18 @@ const RD = {
   inkDim: '#94a3c0',
   inkFaint: '#5a6a8f',
   border: 'rgba(148,170,220,.12)',
+  rowLine: 'rgba(148,170,220,.08)',
   panel: '#0a1020',
+  inkGhost: '#3d4a68',
+  gold: '#e6a419',          // chart markers (same gold the hero monitor uses)
+  masterstroke: '#E8B93C',  // the app's own Masterstroke score colour
 };
+const MONO = "'IBM Plex Mono', monospace";
+
+// Video Guides on YouTube — the tour's "Watch Detailed Video" buttons open
+// these in a new tab here, where the app would open its own Video Guides
+// panel.
+const youtubeUrl = (id) => `https://www.youtube.com/watch?v=${id}`;
 
 const RD_PANEL_CSS = `
   .rd-panel { position:relative; }
@@ -291,18 +301,6 @@ function RdBrand({ children }) {
   return <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, color: RD.blue, textTransform: 'uppercase', letterSpacing: '.03em' }}>{children}</span>;
 }
 
-function RdGlyph({ kind }) {
-  const s = { stroke: RD.blue, strokeWidth: 1.8, fill: 'none' };
-  const inner = {
-    gann: [<line key={1} x1={4} y1={32} x2={32} y2={4} {...s} />, <line key={2} x1={4} y1={32} x2={32} y2={14} {...s} opacity={.6} />, <line key={3} x1={4} y1={32} x2={32} y2={24} {...s} opacity={.35} />],
-    squares: [<rect key={1} x={4} y={4} width={28} height={28} {...s} />, <rect key={2} x={4} y={14} width={17} height={18} {...s} opacity={.6} />, <rect key={3} x={4} y={21} width={10} height={11} {...s} opacity={.35} />],
-    vortex: [<circle key={1} cx={18} cy={18} r={14} {...s} />, <circle key={2} cx={18} cy={18} r={8.5} {...s} opacity={.6} />, <circle key={3} cx={18} cy={18} r={3.5} {...s} opacity={.35} />],
-    mitotic: [<circle key={1} cx={12} cy={18} r={8} {...s} />, <circle key={2} cx={24} cy={18} r={8} {...s} />, <circle key={3} cx={18} cy={18} r={14} {...s} opacity={.3} />],
-    scan: [<circle key={1} cx={15} cy={15} r={10} {...s} />, <line key={2} x1={22.5} y1={22.5} x2={32} y2={32} {...s} strokeLinecap="round" />, <line key={3} x1={15} y1={7} x2={15} y2={23} {...s} opacity={.4} />, <line key={4} x1={7} y1={15} x2={23} y2={15} {...s} opacity={.4} />],
-  }[kind];
-  return <svg width={36} height={36} viewBox="0 0 36 36">{inner}</svg>;
-}
-
 const RD_METHODS = [
   { num: '01', kind: 'mitotic', title: 'Mitotic Scaling', body: 'Our proprietary price-per-bar scale. Lock it once and every 45° angle stays a true 45° through any pan, zoom, or timeframe on that stock.' },
   { num: '02', kind: 'gann', title: 'Dream 45° (1×1)', body: 'From confirmed swings, geometry unfolds — Auto Angles make sure to give, pinpointing exact reversals.' },
@@ -314,46 +312,288 @@ function TickerStrip() {
   const items = ['GANN 1×1 · 45.00°', 'PENTA-VORTEX ARC', 'VORTEX CYCLE T+34', 'MITOTIC SCALE ×2.06', 'SQ9 · 144 · 360'];
   return (
     <div style={{ borderTop: `1px solid ${RD.border}`, borderBottom: `1px solid ${RD.border}`, background: '#070c18' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, letterSpacing: '.14em', color: RD.inkFaint }}>
+      <div className="geo-wrap" style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', fontFamily: MONO, fontSize: 13, letterSpacing: '.14em', color: RD.inkFaint }}>
         {items.map((t, i) => <span key={i}>{t}</span>)}
       </div>
     </div>
   );
 }
 
-function ContrastSection() {
-  const rows = [
-    { text: 'Indicators computed from past averages — always late' },
-    { text: 'Same RSI, MACD, and moving averages as everyone else' },
-    { text: <><RdBrand>Geometry</RdBrand> buried as a drawing toolbar afterthought</> },
-  ];
-  const rowsGood = [
-    { text: 'Structure projected forward from price and time itself' },
-    { text: 'Auto-constructed Gann fans, Mitotic scales, and vortex arcs' },
-    { text: <><RdBrand>Geometry</RdBrand> is the platform — every pixel serves it</> },
-  ];
+// ── Numbered-section shell (design 3a): the page reads top to bottom as
+// 01 Learn → 02 Scan → 03 Practise → 04 Method → 05 Pricing. Every one shares
+// this frame — hairline on top, eyebrow + heading in a fixed 260px column on
+// the left, the section's own content on the right — so the sections differ
+// only in what they show, never in how they are framed. One column <860px.
+function NumberedSection({ id, eyebrow, title, body, action, note, noTop, children }) {
   return (
-    <section id="tools" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px' }}>
-      <div className="rd-panel geo-hero-grid" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-        <RdCorners />
-        <div style={{ padding: '44px 40px', background: '#070c18', borderRight: `1px solid ${RD.border}` }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.inkFaint, marginBottom: 20 }}>EVERY OTHER PLATFORM</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 15.5, color: RD.inkDim }}>
-            {rows.map((r, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12 }}><span style={{ color: RD.red }}>✕</span><span>{r.text}</span></div>
-            ))}
-          </div>
+    <section id={id} style={{ borderTop: noTop ? 'none' : `1px solid ${RD.border}` }}>
+      <div className="geo-wrap geo-sec geo-sec-grid">
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '.2em', color: RD.cyan, marginBottom: 18 }}>{eyebrow}</div>
+          <h2 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.1, margin: (body || action || note) ? '0 0 16px' : 0 }}>{title}</h2>
+          {body && <p style={{ fontSize: 15, lineHeight: 1.6, color: RD.inkDim, margin: (action || note) ? '0 0 16px' : 0 }}>{body}</p>}
+          {action && <div style={{ marginBottom: note ? 16 : 0 }}>{action}</div>}
+          {note && <p style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, margin: 0 }}>{note}</p>}
         </div>
-        <div style={{ padding: '44px 40px', background: 'linear-gradient(160deg, rgba(79,127,255,.09), rgba(53,208,224,.05))' }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: '.22em', color: RD.blue, marginBottom: 20 }}>GEOMETRIYA</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 15.5, color: RD.ink }}>
-            {rowsGood.map((r, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12 }}><span style={{ color: RD.green }}>✓</span><span>{r.text}</span></div>
-            ))}
+        <div style={{ minWidth: 0 }}>{children}</div>
+      </div>
+    </section>
+  );
+}
+
+// ── Geo Tutor demo (01 — LEARN). A working miniature of the app's Voice
+// Assistance: press Play and the tutor SPEAKS each sentence (Web Speech,
+// same 0.95 rate, male narrator as in the app), the transcript highlights
+// the sentence being spoken, and the chart shows what it names — a ring on
+// the price or time level it names, plus a flash on the arc or line, the
+// way the app's own refs glow the element on the chart. Nothing starts
+// until the visitor presses Play.
+//
+// The chart is a real capture of the app: CHOLAFIN, daily, with the Gann Up
+// box (Gann ▲ — the "ABSS Up" drawing) auto-placed on the 6-Mar-2026 swing
+// low at 1,299 (public/tutor-cholafin-gann.jpg, cropped to the chart).
+//
+// The sentences are the app's own Gann Box narration — voiceGannBox in
+// trading-app/src/Geometriya.jsx — in its order and wording: (1) anchor and
+// blue arc, (2) where price stands on the arc ladder, (3) the major targets
+// still ahead, priced at today's bar, (4) the next important time line.
+// The NUMBERS are read off this capture's price axis, so they are within a
+// few rupees of what the app speaks; replace them with the app's transcript
+// for this box whenever it is to hand. Nothing here is a call — every line
+// describes what is drawn.
+//
+// Geometry, in the crop's own pixels (1388×930): the box runs from the
+// anchor at (245, 907) to (1090, 60), so one Gann unit is 3.38px and the
+// arcs are the app's GANN_ARC_DEFS radii × 3.38 — checked against the
+// capture, they sit exactly on the drawn arcs.
+const TUTOR_W = 1388, TUTOR_H = 930;
+const TUTOR_BOX = { x1: 245, y1: 60, x2: 1090, y2: 907 };
+const TUTOR_K = 3.38;
+const TUTOR_ARC = { blue: [50], '1st': [70.711, 75], '2nd': [100, 111.803], '3rd': [150, 158.114], '4th': [200, 206.155], '5th': [250, 254.951] };
+const TUTOR_LINES = [
+  {
+    say: 'Gann up box anchored at the swing low of 1,299 on 6 March 2026, blue arc set to the swing high at 1,605.',
+    text: <>Gann up box anchored at the swing low of <b>1,299</b> on 6 March 2026, blue arc set to the swing high at <b>1,605</b>.</>,
+    arcs: ['blue'],
+    steps: [
+      { ring: { x: 17.65, y: 97.53, label: 'LOW · 1,299' } },
+      { from: 'blue arc set', ring: { x: 18.8, y: 79.46, label: 'HIGH · 1,605' } },
+    ],
+  },
+  {
+    say: 'Price is right at the 2nd arc, a decision level: a close above it opens the 3rd arc, while a bar rejecting here is the counter-trend signal.',
+    text: <>Price is right at the <b>2nd arc</b> — a decision level: a close above it opens the 3rd arc, while a bar rejecting here is the counter-trend signal.</>,
+    arcs: ['2nd', '3rd'],
+    steps: [
+      { ring: { x: 34.22, y: 65.81, label: '2ND ARC · 1,839' } },
+      { from: 'opens the 3rd arc', ring: { x: 34.22, y: 48.95, label: '3RD ARC' } },
+      { from: 'while a bar rejecting', ring: { x: 34.22, y: 65.81, label: '2ND ARC · 1,839' } },
+    ],
+  },
+  {
+    say: "Major targets ahead: the 3rd red arc near 2,118, the 5th red arc near 2,772, and the main square's top boundary at 2,830.",
+    text: <>Major targets ahead: the <b>3rd red arc</b> near 2,118, the 5th red arc near 2,772, and the main square&rsquo;s top boundary at 2,830.</>,
+    arcs: ['3rd', '5th'], hline: TUTOR_BOX.y1,
+    // Each level is priced where the arc crosses TODAY's bar (x = 34.22%),
+    // exactly as the app prices them, so the rings sit on that vertical.
+    steps: [
+      { ring: { x: 34.22, y: 48.95, label: '3RD ARC · 2,118' } },
+      { from: 'the 5th red arc', ring: { x: 34.22, y: 10.1, label: '5TH ARC · 2,772', below: true } },
+      { from: "the main square", ring: { x: 62, y: 6.45, label: 'TOP · 2,830', below: true } },
+    ],
+  },
+  {
+    say: 'Next important time line, the 2nd square boundary, is about 59 trading days away, around 27 November 2026; the rules watch these verticals for time-based turns.',
+    text: <>Next important time line — the <b>2nd square boundary</b> — is about 59 trading days away, around 27 November 2026; the rules watch these verticals for time-based turns.</>,
+    vline: TUTOR_BOX.x1 + 100 * TUTOR_K,
+    steps: [
+      { ring: { x: 42.0, y: 93.2, label: '2ND BOUNDARY' } },
+    ],
+  },
+].map(l => ({ ...l, steps: l.steps.map(st => ({ ...st, at: st.from ? l.say.indexOf(st.from) : 0 })) }));
+// Silent fallback pace, for browsers without speech synthesis — and, when
+// the engine gives no word-boundary events, the pace the steps assume.
+const TUTOR_STEP_MS = 4500;
+const TUTOR_CHARS_PER_SEC = 13;
+// Narrator: David (the app's default, Anand's pick) → any English male
+// voice → Indian English → any English voice. Voices load asynchronously
+// in Chrome, so the first sentence waits for them — speaking before the
+// list is ready is what hands the engine its default (female) voice.
+const TUTOR_MALE_RE = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan)/i;
+const TUTOR_FEMALE_RE = /female/i;
+const isEn = v => /^en[-_]/i.test(v.lang);
+function pickTutorVoice(voices) {
+  const male = v => TUTOR_MALE_RE.test(v.name) && !TUTOR_FEMALE_RE.test(v.name);
+  return voices.find(v => /david/i.test(v.name) && isEn(v))
+      || voices.find(v => v.lang === 'en-IN' && male(v))
+      || voices.find(v => isEn(v) && male(v))
+      || voices.find(v => v.lang === 'en-IN')
+      || voices.find(isEn)
+      || null;
+}
+function tutorVoices(synth) {
+  return new Promise(resolve => {
+    const now = synth.getVoices();
+    if (now.length) { resolve(now); return; }
+    let done = false;
+    const finish = () => { if (done) return; done = true; synth.removeEventListener('voiceschanged', finish); resolve(synth.getVoices()); };
+    synth.addEventListener('voiceschanged', finish);
+    setTimeout(finish, 1500);
+  });
+}
+// The crop's own shape — the marker wrapper must keep it exactly, or the
+// percentages above stop landing on the chart features they name.
+const TUTOR_CHART_RATIO = TUTOR_H / TUTOR_W;
+const TUTOR_CHART_MIN_W = Math.ceil(360 / TUTOR_CHART_RATIO); // fills a 360px-tall box
+
+function GeoTutorDemo({ playing, onToggle, onEnd }) {
+  const [pos, setPos] = useState({ i: 0, step: 0 });
+  const i = pos.i;
+  const goTo = k => setPos({ i: k, step: 0 });
+  // One sentence per effect run: speak it (or wait, without speech), then
+  // advance; after the last one, stop — the app reads a drawing once, it
+  // does not loop. Changing the line mid-speech (a click on the transcript)
+  // cancels the current utterance and starts the new one. While a sentence
+  // is spoken, the engine's word-boundary events move the ring to the level
+  // being named; engines that send none fall back to a timed walk.
+  useEffect(() => {
+    if (!playing) return;
+    let stale = false;
+    const line = TUTOR_LINES[i];
+    const last = i === TUTOR_LINES.length - 1;
+    const advance = () => { if (stale) return; if (last) onEnd(); else goTo(i + 1); };
+    const setStep = k => { if (!stale) setPos(p => (p.i === i && p.step !== k ? { i, step: k } : p)); };
+    const timers = [];
+    const clearTimers = () => { while (timers.length) clearTimeout(timers.pop()); };
+    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    if (synth && typeof SpeechSynthesisUtterance !== 'undefined') {
+      synth.cancel();
+      tutorVoices(synth).then(voices => {
+        if (stale) return;
+        const u = new SpeechSynthesisUtterance(line.say);
+        u.lang = 'en-IN';
+        u.rate = 0.95;
+        u.pitch = 1.0;
+        const voice = pickTutorVoice(voices || []);
+        if (voice) u.voice = voice;
+        let boundaries = false;
+        u.onboundary = e => {
+          if (stale || (e.name && e.name !== 'word')) return;
+          if (!boundaries) { boundaries = true; clearTimers(); }
+          let k = 0;
+          line.steps.forEach((st, idx) => { if (st.at <= e.charIndex) k = idx; });
+          setStep(k);
+        };
+        line.steps.forEach((st, idx) => {
+          if (idx === 0) return;
+          timers.push(setTimeout(() => { if (!boundaries) setStep(idx); }, (st.at / TUTOR_CHARS_PER_SEC) * 1000));
+        });
+        u.onend = advance;
+        u.onerror = advance;
+        synth.speak(u);
+      });
+      return () => { stale = true; clearTimers(); synth.cancel(); };
+    }
+    line.steps.forEach((st, idx) => {
+      if (idx > 0) timers.push(setTimeout(() => setStep(idx), (idx / line.steps.length) * TUTOR_STEP_MS));
+    });
+    timers.push(setTimeout(advance, TUTOR_STEP_MS));
+    return () => { stale = true; clearTimers(); };
+  }, [playing, i, onEnd]);
+  const cur = TUTOR_LINES[i];
+  const ring = cur.steps[Math.min(pos.step, cur.steps.length - 1)].ring;
+  const markerMove = 'left .6s ease, top .6s ease';
+  const flashArcs = (cur.arcs || []).flatMap(b => TUTOR_ARC[b].map(u => u * TUTOR_K));
+  return (
+    <div className="geo-tutor-demo" style={{ background: '#050505', borderRadius: 8, overflow: 'hidden', border: `1px solid ${RD.border}`, boxShadow: '0 30px 60px rgba(0,0,0,.4)' }}>
+      {/* Chart column. The capture keeps its own shape inside a wrapper that
+          is centred in the column (so it sits level with the transcript
+          beside it); the SVG flash layer, the ring and the label all live in
+          that wrapper, in the capture's own coordinates. */}
+      <div className="geo-tutor-chart" style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className="geo-tutor-frame" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: `max(100%, var(--tutor-min-w, ${TUTOR_CHART_MIN_W}px))`, aspectRatio: `${TUTOR_W} / ${TUTOR_H}` }}>
+          <img src="/tutor-cholafin-gann.jpg" alt="CHOLAFIN daily chart with a Gann Up box, its fans and arcs, and the Geo Tutor highlighting the element it is describing" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
+          {/* Flash layer — the arcs and lines the current sentence names,
+              pulsing in the marker gold, clipped to the box like the app's. */}
+          <svg viewBox={`0 0 ${TUTOR_W} ${TUTOR_H}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} aria-hidden="true">
+            <defs>
+              <clipPath id="geo-tutor-box"><rect x={TUTOR_BOX.x1} y={TUTOR_BOX.y1} width={TUTOR_BOX.x2 - TUTOR_BOX.x1} height={TUTOR_BOX.y2 - TUTOR_BOX.y1} /></clipPath>
+            </defs>
+            <g className="geo-tutor-flash" clipPath="url(#geo-tutor-box)" key={i}>
+              {flashArcs.map(r => <circle key={r} cx={TUTOR_BOX.x1} cy={TUTOR_BOX.y2} r={r} />)}
+              {cur.hline != null && <line x1={TUTOR_BOX.x1} y1={cur.hline} x2={TUTOR_BOX.x2} y2={cur.hline} />}
+              {cur.vline != null && <line x1={cur.vline} y1={TUTOR_BOX.y1} x2={cur.vline} y2={TUTOR_BOX.y2} />}
+            </g>
+          </svg>
+          {ring && (
+            <>
+              <div style={{ position: 'absolute', left: `${ring.x}%`, top: `${ring.y}%`, width: 30, height: 30, border: `2px solid ${RD.gold}`, borderRadius: '50%', transform: 'translate(-50%,-50%)', boxShadow: '0 0 16px 3px rgba(230,164,25,.6)', transition: markerMove }} />
+              <div style={{ position: 'absolute', left: `${ring.x}%`, top: `${ring.y}%`, transform: ring.below ? 'translate(-50%,90%)' : 'translate(-50%,-190%)', fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: RD.gold, whiteSpace: 'nowrap', textShadow: '0 0 10px rgba(230,164,25,.5)', transition: markerMove }}>{ring.label}</div>
+            </>
+          )}
+          {/* The app's own scrip label, sitting just above the box's left
+              corner (over the chart's top-left corner on a phone, where
+              there is no room above). The Mitotic lock badge is the real
+              one in the capture. */}
+          <div className="geo-tutor-tag" style={{ position: 'absolute', left: `${(TUTOR_BOX.x1 / TUTOR_W) * 100}%`, fontFamily: MONO, fontSize: 11, letterSpacing: '.08em', color: RD.ink, background: 'rgba(6,10,20,.75)', border: `1px solid ${RD.border}`, borderRadius: 999, padding: '3px 10px', whiteSpace: 'nowrap' }}>
+            CHOLAFIN <span style={{ color: RD.inkFaint }}>· D ·</span> Gann <span style={{ color: RD.green }}>▲</span>
           </div>
         </div>
       </div>
-    </section>
+      {/* Transcript */}
+      <div className="geo-tutor-transcript" style={{ background: RD.panel, borderLeft: `1px solid ${RD.border}`, padding: 20, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, lineHeight: 1.55 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '.18em', color: RD.cyan }}>◉ GEO TUTOR</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, color: RD.inkFaint }}>{i + 1} / {TUTOR_LINES.length}</span>
+        </div>
+        <div style={{ height: 3, background: RD.border, borderRadius: 2 }}>
+          <div style={{ width: `${((i + 1) / TUTOR_LINES.length) * 100}%`, height: '100%', background: RD.cyan, borderRadius: 2, transition: 'width .4s ease' }} />
+        </div>
+        {TUTOR_LINES.map((l, k) => (
+          <div key={k} className={`geo-tutor-line${k === i ? ' active' : ''}`} onClick={() => goTo(k)}>{l.text}</div>
+        ))}
+        <button type="button" onClick={onToggle} style={{ marginTop: 'auto', textAlign: 'center', padding: 9, borderRadius: 6, border: 'none', background: RD.cyan, color: '#03050b', fontWeight: 600, fontFamily: MONO, fontSize: 11.5, cursor: 'pointer' }}>
+          {playing ? '❚❚ Stop narration' : '▶ Play narration'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Masterstroke ranked list (02 — SCAN). Static demo rows: the point is the
+// shape of the output — one scrip, the readings that agreed, a bias, a score
+// — not today's numbers, and the table says so in its last row.
+const MS_DEMO_ROWS = [
+  { scrip: 'RELIANCE',  methods: 'Dream 45 · Sq. of Range · Arc · Weekly trend · RS · Structure · Cycle', bull: true,  score: 81 },
+  { scrip: 'HDFCBANK',  methods: 'Dream 45 · Triangle · Weekly trend · Structure · Cycle',                bull: true,  score: 64 },
+  { scrip: 'TATASTEEL', methods: 'Sq. of Range · Arc · Liquidity sweep · RS',                             bull: false, score: 57 },
+  { scrip: 'INFY',      methods: 'Dream 45 · Gann Square · Structure',                                    bull: true,  score: 52 },
+];
+
+function MasterstrokeTable() {
+  return (
+    <div>
+      {/* The feature's name, in the app's own Masterstroke gold, sitting on
+          the table so the eye lands on it before the rows. */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14, fontFamily: MONO }}>
+        <span style={{ fontSize: 13, letterSpacing: '.22em', fontWeight: 700, color: RD.masterstroke, textShadow: '0 0 14px rgba(232,185,60,.35)' }}>✦ MASTERSTROKE</span>
+        <span style={{ fontSize: 11.5, letterSpacing: '.08em', color: RD.inkFaint }}>one scan · every method · ranked</span>
+      </div>
+    <div style={{ background: RD.panel, border: `1px solid ${RD.border}`, borderRadius: 8, fontFamily: MONO, fontSize: 13, overflow: 'hidden' }}>
+      <div className="geo-ms-row geo-ms-head" style={{ padding: '14px 26px', color: RD.inkFaint, fontSize: 11, letterSpacing: '.14em', borderBottom: `1px solid ${RD.border}` }}>
+        <span>SCRIP</span><span className="geo-ms-methods">METHODS AGREEING</span><span>BIAS</span><span style={{ textAlign: 'right' }}>✦ SCORE</span>
+      </div>
+      {MS_DEMO_ROWS.map((r) => (
+        <div key={r.scrip} className="geo-ms-row" style={{ padding: '16px 26px', borderBottom: `1px solid ${RD.rowLine}`, alignItems: 'center' }}>
+          <span style={{ fontWeight: 600, color: RD.ink }}>{r.scrip}</span>
+          <span className="geo-ms-methods" style={{ color: RD.inkDim, lineHeight: 1.5 }}>{r.methods}</span>
+          <span style={{ color: r.bull ? RD.green : RD.red, fontWeight: 600 }}>{r.bull ? '▲ BULL' : '▼ BEAR'}</span>
+          <span style={{ textAlign: 'right', color: RD.masterstroke, fontWeight: 700, fontSize: 15 }}>{r.score}</span>
+        </div>
+      ))}
+      <div style={{ padding: '10px 26px', fontSize: 11, letterSpacing: '.06em', color: RD.inkGhost }}>Illustrative rows — not today's scan.</div>
+    </div>
+    </div>
   );
 }
 
@@ -446,37 +686,6 @@ function HeroMonitor() {
     </div>
   );
 }
-
-function ToolIcon({ shape, color }) {
-  const s = { width: 22, height: 22, flexShrink: 0 };
-  switch (shape) {
-    case 'compass':
-      return <svg viewBox="0 0 24 24" style={s}><path d="M12 3 L20 20 L4 20 Z" fill="none" stroke={color} strokeWidth="1.4" /><circle cx="12" cy="3" r="1.6" fill={color} /></svg>;
-    case 'square':
-      return <svg viewBox="0 0 24 24" style={s}><rect x="4" y="4" width="16" height="16" fill="none" stroke={color} strokeWidth="1.4" /><line x1="4" y1="4" x2="20" y2="20" stroke={color} strokeWidth="1" opacity="0.5" /></svg>;
-    case 'circle':
-      return <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="12" r="8" fill="none" stroke={color} strokeWidth="1.4" /><path d="M12 4 L12 20 M4 12 L20 12" stroke={color} strokeWidth="0.7" opacity="0.5" /></svg>;
-    case 'spiral':
-      return <svg viewBox="0 0 24 24" style={s}><path d="M12 12 C12 9 15 9 15 12 C15 15.5 9.5 15.5 9.5 11 C9.5 6.5 17 6.5 17 12 C17 18 6 18 6 11" fill="none" stroke={color} strokeWidth="1.3" strokeLinecap="round" /></svg>;
-    case 'clock':
-      return <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="12" r="8" fill="none" stroke={color} strokeWidth="1.4" /><path d="M12 8 L12 12 L15 14" stroke={color} strokeWidth="1.4" strokeLinecap="round" fill="none" /></svg>;
-    case 'zone':
-      return <svg viewBox="0 0 24 24" style={s}><rect x="3" y="9" width="18" height="6" fill={color} opacity="0.25" /><rect x="3" y="9" width="18" height="6" fill="none" stroke={color} strokeWidth="1.2" /></svg>;
-    case 'ruler':
-      return <svg viewBox="0 0 24 24" style={s}><line x1="4" y1="20" x2="20" y2="4" stroke={color} strokeWidth="1.6" strokeLinecap="round" /><line x1="7" y1="17" x2="9" y2="15" stroke={color} strokeWidth="1" /><line x1="10" y1="14" x2="12" y2="12" stroke={color} strokeWidth="1" /><line x1="13" y1="11" x2="15" y2="9" stroke={color} strokeWidth="1" /></svg>;
-    default:
-      return null;
-  }
-}
-
-const TOOL_GROUPS = [
-  { name: 'Fibonacci', icon: 'spiral', color: C.gold, desc: 'Retracement, extension, and FLATS arcs derived from ratio geometry, not lagging indicators.' },
-  { name: 'Gann', icon: 'compass', color: C.gold, desc: 'Squares, fans, and the Secret Angle — geometric time/price relationships mapped directly onto the chart.' },
-  { name: 'Geometric', icon: 'square', color: C.purple, desc: 'Equilateral triangles, squares, and 3-point circles constructed from real swing points.' },
-  { name: 'Vortex', icon: 'circle', color: C.pink, desc: 'Single, tri- and penta-vortex constructions for cyclical structure most platforms don\u2019t offer at all.' },
-  { name: 'Time', icon: 'clock', color: C.green, desc: 'Time series projection and price\u2194time conversion — geometry applied to the x-axis, not just price.' },
-  { name: 'Zones & Measure', icon: 'zone', color: C.blue, desc: 'Demand/supply zones and precise count/target measurement tools for execution.' },
-];
 
 // ── Backend API base URL ──
 // From the build environment, falling back to production. Less critical here
@@ -603,6 +812,38 @@ const nationalNumberOk = (code, local) => {
   return len ? local.length === len : local.length >= 6 && local.length <= 15;
 };
 
+// ── Google sign-in (design 4a, 5-Sep-2026). The same Google Identity
+// Services button the app's sign-in screen uses, and the same backend route
+// (POST /api/auth/google): Google replaces email + password + OTP, never the
+// phone — every session, ledger row and billing decision is keyed on the
+// phone, so the number is asked first on both paths. The client ID is public
+// by design (it ships in the page); only the secret on Render matters. The
+// OAuth client's AUTHORISED ORIGINS must list this site — www and apex
+// geometricalanalysis.com, and http://localhost:5174 for local work — or
+// Google refuses the sign-in popup. So the button is OFF until the
+// deployment opts in: set VITE_GOOGLE_CLIENT_ID on Vercel (the app's web
+// client, 463903235383-vtidkg2nok29vfnf9mfrhvj0j0cn9llj.apps.googleusercontent.com)
+// once those origins are added; .env.local carries it for localhost. Empty
+// means the card offers email + password only, and the steps say so.
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+// Signup card tokens (design 4a).
+const SU = {
+  field: '#0c1526', border: 'rgba(148,170,220,.14)', ink: '#e8edf8', dim: '#94a3c0', faint: '#5a6a8f',
+  placeholder: '#5c7699', blue: '#4f7fff', red: '#e2554f', green: '#2fbf71', ghost: '#3d4a68',
+};
+
+function GoogleLogo() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.6 17.7 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-2.8-.4-4H24v8.1h12.9c-.3 2.2-1.7 5.4-4.9 7.6l7.5 5.8c4.5-4.1 7-10.2 7-17.5z" />
+      <path fill="#FBBC05" d="M10.4 28.7A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.8-6.1z" />
+      <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2 1.4-4.8 2.4-8.4 2.4-6.3 0-11.7-4.1-13.6-9.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z" />
+    </svg>
+  );
+}
+
 function SignupForm({ selectedPlan, clearSelectedPlan }) {
   const [step, setStep] = useState('details'); // details | otp | success | already_registered
   // ── Turnstile (bot gate, mirrors the app's signup form). Rendered
@@ -623,6 +864,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
         'expired-callback': () => setCaptchaToken(''),
         'error-callback': () => setCaptchaToken(''),
         theme: 'dark',
+        size: 'flexible',
       });
     };
     if (window.turnstile) {
@@ -644,7 +886,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   }, [step]);
   const [name, setName] = useState('');
   // `phone` stays the FULL international number — every call below (signup,
-  // the 409→login fallback, verify-otp, create-order) already sends it.
+  // the 409→login fallback, verify-otp, create-order, google) already sends it.
   // The two controls compose it; India default matches the old behaviour.
   const [phone, setPhone] = useState('');
   const [dialCode, setDialCode] = useState('91');
@@ -681,65 +923,171 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
     document.body.appendChild(script);
   });
 
-  // Soft Relief — the same treatment as the app's sign-in screen, so the
-  // signup form here and the login screen it hands over to feel like one
-  // surface. Fields are pressed into the panel, the button stands off it,
-  // and neither carries a border; see GATE_CSS in the app for the three
-  // rules this depends on.
-  //
-  // Colours are the page's own, unchanged — only the light is new. Fields
-  // keep #0c1526, already darker than the panel, so the inset shadow just
-  // finishes the job of making them read as channels cut into it. The CTA
-  // keeps its gradient: it is the one element that should NOT look like the
-  // same material as everything around it.
-  // Every field is one width. This used to be a wrapping flex row where each
-  // input carried its own minWidth (150 for the country select, 220 for the
-  // rest) and sized to its content, so the six fields came out ragged and
-  // the rows never lined up. The grid below owns the widths instead —
-  // width:100% and minWidth:0 let a cell shrink to its track rather than
-  // pushing past it, which is what kept the placeholders from fitting.
+  // The verified account is handed to the app on its own subdomain —
+  // localStorage can't be shared across origins, so the token travels as a
+  // URL param and the app picks it up on load. Same hand-off for every path
+  // (OTP, Google, and after a paid checkout).
+  const handOffToApp = (data) => {
+    setStep('success');
+    setStatus('idle');
+    // Consumed — the account now carries referred_by_code, and leaving it in
+    // storage would attach the same referrer to any later signup from this
+    // browser (a shared laptop, a family phone).
+    clearReferralCode();
+    const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
+    setTimeout(() => { window.location.href = dest; }, 1200);
+  };
+
+  // Skip-trial path: straight to Razorpay checkout for the chosen plan, then
+  // into the app. Shared by the OTP and Google paths.
+  const startCheckout = async (data) => {
+    const scriptOk = await loadRazorpayScript();
+    if (!scriptOk) throw new Error('Could not load payment gateway. Check your connection and try again.');
+
+    const orderRes = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: data.phone, planType: selectedPlan }),
+    });
+    const order = await orderRes.json();
+    if (!orderRes.ok) throw new Error(order.error || 'Could not start payment.');
+
+    const rzp = new window.Razorpay({
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'Geometriya',
+      description: `${selectedPlan} plan`,
+      order_id: order.orderId,
+      prefill: { name: order.name, contact: data.phone },
+      theme: { color: '#B98A3D' },
+      handler: async (response) => {
+        try {
+          const verifyRes = await fetch(`${API_BASE_URL}/api/payment/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: data.phone,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok) throw new Error(verifyData.error || 'Payment verification failed.');
+          handOffToApp(data);
+        } catch (err) {
+          setErrorMsg(err.message);
+          setStatus('error');
+        }
+      },
+      modal: { ondismiss: () => setStatus('idle') },
+    });
+    rzp.open();
+    setStatus('idle');
+  };
+
+  // ── Google. The button is Google's own (its script renders it into
+  //    googleBtnRef, like Turnstile), shown only once the mobile number is
+  //    complete — the backend needs the phone with the credential. The
+  //    callback reads phone / name through refs so it never sees a stale
+  //    closure from the render that drew the button. ──
+  const googleBtnRef = useRef(null);
+  const latest = useRef({ phone: '', name: '' });
+  latest.current = { phone, name };
+  const phoneOk = nationalNumberOk(dialCode, phoneLocal);
+  const submitGoogle = async (credential) => {
+    setStatus('loading');
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          credential,
+          phone: latest.current.phone,
+          // Google supplies the name; a typed one wins, because people's
+          // Google names are not always their names.
+          name: latest.current.name.trim() || undefined,
+          referralCode: readReferralCode() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        if (selectedPlan) { await startCheckout(data); return; }
+        handOffToApp(data);
+        return;
+      }
+      throw new Error(data.error || 'Google sign-in failed — please try again.');
+    } catch (err) {
+      setErrorMsg(err.message || 'Google sign-in failed — please try again.');
+      setStatus('error');
+    }
+  };
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || step !== 'details' || !phoneOk) return;
+    let cancelled = false;
+    const render = () => {
+      if (cancelled || !googleBtnRef.current || !window.google?.accounts?.id) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (r) => { if (r?.credential) submitGoogle(r.credential); },
+        ux_mode: 'popup',
+      });
+      googleBtnRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleBtnRef.current,
+        { theme: 'outline', size: 'large', width: 400, text: 'continue_with', shape: 'rectangular', logo_alignment: 'center' });
+    };
+    if (window.google?.accounts?.id) { render(); return () => { cancelled = true; }; }
+    let s = document.querySelector('script[data-gsi]');
+    if (!s) {
+      s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true; s.defer = true; s.dataset.gsi = '1';
+      document.head.appendChild(s);
+    }
+    s.addEventListener('load', render);
+    return () => { cancelled = true; s.removeEventListener('load', render); };
+    // submitGoogle is a plain const above; the effect only runs after render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, phoneOk]);
+
+  // ── Card styling (design 4a). Fields are flat channels on the card; the
+  //    focus ring comes from the .geo-field class in the page stylesheet.
   const inputStyle = {
-    background: '#0c1526',
-    border: 'none',
-    color: C.ink,
-    padding: '14px 16px',
-    borderRadius: 10,
+    background: SU.field,
+    border: `1px solid ${SU.border}`,
+    color: SU.ink,
+    padding: '13px 14px',
+    borderRadius: 8,
     fontSize: 14,
     width: '100%',
     minWidth: 0,
     boxSizing: 'border-box',
     fontFamily: "'Inter', sans-serif",
     outline: 'none',
-    boxShadow: 'inset 3px 4px 9px rgba(0,0,0,0.62), inset -2px -2px 6px rgba(146,178,255,0.05)',
   };
-
-  // Two even columns while there is room, one when there is not — no media
-  // query needed, and no fixed breakpoint to get wrong on a tablet.
-  const formGrid = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(235px, 1fr))',
-    gap: 12,
-    alignItems: 'start',
-    maxWidth: 560,
-    margin: '0 auto',
-  };
-  const fullRow = { gridColumn: '1 / -1' };
-
+  const labelStyle = { fontFamily: MONO, fontSize: 11, letterSpacing: '.14em', color: SU.dim, marginBottom: 10 };
   const buttonStyle = (disabled) => ({
-    background: disabled ? '#16233b' : CTA_GRADIENT,
-    // A lit top lip over a dark base, so it reads as a raised key rather than
-    // a flat fill. Disabled loses the lip and sinks instead.
-    boxShadow: disabled
-      ? 'inset 2px 3px 8px rgba(0,0,0,0.45)'
-      : 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -2px 0 rgba(0,0,0,0.22), 0 8px 20px rgba(47,95,224,0.34)',
+    width: '100%',
+    background: disabled ? '#16233b' : SU.blue,
+    boxShadow: disabled ? 'none' : '0 8px 20px rgba(47,95,224,.34)',
     color: disabled ? '#4c5f7d' : '#FFFFFF',
     fontWeight: 600,
-    fontSize: 14,
-    padding: '14px 22px',
-    borderRadius: 10,
+    fontSize: 15,
+    padding: 14,
+    borderRadius: 8,
     border: 'none',
     cursor: disabled ? 'default' : 'pointer',
+    fontFamily: "'Space Grotesk', sans-serif",
+    marginTop: 4,
   });
+  const errorLine = status === 'error' && errorMsg && (
+    <div style={{ textAlign: 'center', color: SU.red, fontSize: 13, fontFamily: "'Inter', sans-serif", marginTop: 12 }}>{errorMsg}</div>
+  );
+  const footnote = (text) => (
+    <div style={{ textAlign: 'center', fontFamily: "'Inter', sans-serif", fontSize: 12.5, lineHeight: 1.55, color: SU.faint, marginTop: 16 }}>{text}</div>
+  );
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -833,70 +1181,8 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid code — please try again.');
-
-      if (selectedPlan) {
-        // Skip-trial path: go straight to Razorpay checkout for the chosen plan.
-        const scriptOk = await loadRazorpayScript();
-        if (!scriptOk) throw new Error('Could not load payment gateway. Check your connection and try again.');
-
-        const orderRes = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: data.phone, planType: selectedPlan }),
-        });
-        const order = await orderRes.json();
-        if (!orderRes.ok) throw new Error(order.error || 'Could not start payment.');
-
-        const rzp = new window.Razorpay({
-          key: order.keyId,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'Geometriya',
-          description: `${selectedPlan} plan`,
-          order_id: order.orderId,
-          prefill: { name: order.name, contact: data.phone },
-          theme: { color: '#B98A3D' },
-          handler: async (response) => {
-            try {
-              const verifyRes = await fetch(`${API_BASE_URL}/api/payment/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  phone: data.phone,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              });
-              const verifyData = await verifyRes.json();
-              if (!verifyRes.ok) throw new Error(verifyData.error || 'Payment verification failed.');
-              setStep('success');
-              setStatus('idle');
-              const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
-              setTimeout(() => { window.location.href = dest; }, 1200);
-            } catch (err) {
-              setErrorMsg(err.message);
-              setStatus('error');
-            }
-          },
-          modal: { ondismiss: () => setStatus('idle') },
-        });
-        rzp.open();
-        setStatus('idle');
-        return;
-      }
-
-      // Plain trial path — hand the verified session off to the trading app.
-      // Since it lives on a different subdomain, localStorage can't be shared
-      // directly — so the token travels as a URL param, and the app picks it up on load.
-      setStep('success');
-      setStatus('idle');
-      // Consumed — the account now carries referred_by_code, and leaving it in
-      // storage would attach the same referrer to any later signup from this
-      // browser (a shared laptop, a family phone).
-      clearReferralCode();
-      const dest = `${APP_URL}/?phone=${encodeURIComponent(data.phone)}&token=${encodeURIComponent(data.token)}`;
-      setTimeout(() => { window.location.href = dest; }, 1200);
+      if (selectedPlan) { await startCheckout(data); return; }
+      handOffToApp(data);
     } catch (err) {
       setErrorMsg(err.message || 'Invalid code — please try again.');
       setStatus('error');
@@ -905,9 +1191,9 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
 
   if (step === 'already_registered') {
     return (
-      <div style={{ fontSize: 15, color: C.inkDim, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
+      <div style={{ fontSize: 15, lineHeight: 1.7, color: SU.dim, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
         This number is already registered.{' '}
-        <a href={APP_URL} style={{ color: C.gold, textDecoration: 'underline' }}>
+        <a href={APP_URL} style={{ color: SU.blue, textDecoration: 'underline' }}>
           Go to Geometriya and sign in with your email or phone and password
         </a>
         {' '}instead — no need to sign up again.
@@ -917,7 +1203,7 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
 
   if (step === 'success') {
     return (
-      <div style={{ fontSize: 15, color: C.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
+      <div style={{ fontSize: 15, lineHeight: 1.7, color: SU.green, fontFamily: "'Inter', sans-serif", padding: '13px 0' }}>
         {selectedPlan
           ? `✓ Payment confirmed — your ${selectedPlan === 'yearly' ? 'yearly' : 'monthly'} plan is active. Taking you to Geometriya now…`
           : '✓ Verified — your 30-day trial is active. Taking you to Geometriya now…'}
@@ -929,130 +1215,143 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
   // restored session carrying the retired plan renders nothing rather than
   // throwing on an undefined call.
   const planBanner = selectedPlan && PLAN_LABELS[selectedPlan] && (
-    <div style={{ ...fullRow, marginBottom: 4, fontSize: 13, color: C.ink, background: C.bgPanel, border: `1px solid ${C.gold}`, borderRadius: 4, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+    <div style={{ marginBottom: 18, fontSize: 13, color: SU.ink, background: SU.field, border: `1px solid rgba(79,127,255,.5)`, borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontFamily: "'Inter', sans-serif" }}>
       <span>Buying: <strong>{PLAN_LABELS[selectedPlan]()}</strong> — skipping the free trial</span>
-      <span onClick={clearSelectedPlan} style={{ color: C.inkFaint, cursor: 'pointer', textDecoration: 'underline', flexShrink: 0, fontSize: 12 }}>Use free trial instead</span>
+      <span onClick={clearSelectedPlan} style={{ color: SU.faint, cursor: 'pointer', textDecoration: 'underline', flexShrink: 0, fontSize: 12 }}>Use free trial instead</span>
     </div>
   );
 
   if (step === 'otp') {
-    // Same grid as the details step, so the code field lands exactly where
-    // the fields above it were rather than jumping to a new width.
+    // Same card shell; the body is just the code field and Verify.
     return (
-      <form onSubmit={handleVerifyOtp} style={formGrid}>
+      <form onSubmit={handleVerifyOtp}>
         {planBanner}
+        <div style={labelStyle}>VERIFICATION CODE <span style={{ color: SU.red }}>*</span></div>
         <input
+          className="geo-field"
           type="text"
           inputMode="numeric"
           required
           placeholder="Enter the code we sent you"
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
-          style={{ ...inputStyle, letterSpacing: 2 }}
+          style={{ ...inputStyle, letterSpacing: 2, marginBottom: 12 }}
         />
-        <button type="submit" disabled={status === 'loading'}
-          style={{ ...buttonStyle(status === 'loading'), ...fullRow, justifySelf: 'center', minWidth: 240 }}>
+        <button type="submit" disabled={status === 'loading'} style={buttonStyle(status === 'loading')}>
           {status === 'loading' ? 'Verifying…' : 'Verify'}
         </button>
-        {status === 'error' && (
-          <div style={{ ...fullRow, textAlign: 'center', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
-            {errorMsg}
-          </div>
-        )}
-        <div style={{ ...fullRow, textAlign: 'center', color: C.inkFaint, fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
+        {errorLine}
+        {footnote(<>
           Sent to your email — check your inbox and spam folder. Didn&rsquo;t get it?{' '}
           <span
             onClick={() => { setStep('details'); setOtp(''); setStatus('idle'); setErrorMsg(''); }}
-            style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
+            style={{ color: SU.blue, cursor: 'pointer', textDecoration: 'underline' }}
           >
             Try again
           </span>
-        </div>
+        </>)}
       </form>
     );
   }
 
+  const canSubmit = !(status === 'loading' || !phoneOk || !name || !email || !password || !password2);
   return (
-    <form onSubmit={handleSendOtp} style={formGrid}>
+    <form onSubmit={handleSendOtp}>
       {planBanner}
-      <input
-        type="text"
-        required
-        placeholder="Your name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={inputStyle}
-      />
-      <select
-        value={dialCode}
-        onChange={(e) => applyPhoneParts(e.target.value, phoneLocal)}
-        aria-label="Country code"
-        style={inputStyle}
-      >
-        {DIAL_CODES.map(c => <option key={c.label} value={c.code}>{c.label}</option>)}
-      </select>
-      <input
-        type="tel"
-        required
-        placeholder={dialEntryFor(dialCode).len ? `${dialEntryFor(dialCode).len}-digit mobile number` : 'Mobile number'}
-        value={phoneLocal}
-        onChange={(e) => applyPhoneParts(dialCode, e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type="email"
-        required
-        placeholder="Email address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type="password"
-        required
-        placeholder="Password (min 6 characters)"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type="password"
-        required
-        placeholder="Re-type password"
-        value={password2}
-        onChange={(e) => setPassword2(e.target.value)}
-        style={inputStyle}
-      />
-      {/* Turnstile bot gate — Cloudflare renders into this div (see the
-          step effect above). Absent entirely while the site key is empty. */}
-      {TURNSTILE_SITE_KEY && (
-        <div style={{ ...fullRow, display: 'flex', justifyContent: 'center', minHeight: 65 }}>
-          <div ref={captchaRef} />
+
+      {/* 1 · Mobile number — required on both paths (see GOOGLE_CLIENT_ID). */}
+      <div style={labelStyle}>MOBILE NUMBER <span style={{ color: SU.red }}>*</span></div>
+      <div className="geo-su-phone" style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 12, marginBottom: dialCode !== '91' ? 10 : 22 }}>
+        {/* The closed control is drawn by hand — dial code first, country
+            name trimmed with an ellipsis — because a native <select> shows
+            its option text as-is, and "United States / Canada (+1)" in a
+            150px box clipped to "United States /" with the +1 lost. The
+            real <select> sits on top, invisible, so the dropdown, keyboard
+            and screen readers all still get the full list. */}
+        <div className="geo-select-wrap" style={{ position: 'relative' }}>
+          <div className="geo-field" aria-hidden="true" style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, paddingRight: 30 }}>
+            <span style={{ fontWeight: 600, flexShrink: 0 }}>+{dialCode}</span>
+            <span style={{ color: SU.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{dialEntryFor(dialCode).label.replace(/\s*\(\+\d+\)$/, '')}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }}><path d="M1 1l4 4 4-4" fill="none" stroke={SU.placeholder} strokeWidth="1.5" /></svg>
+          </div>
+          <select
+            value={dialCode}
+            onChange={(e) => applyPhoneParts(e.target.value, phoneLocal)}
+            aria-label="Country code"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', fontSize: 14 }}
+          >
+            {DIAL_CODES.map(c => <option key={c.label} value={c.code}>{c.label}</option>)}
+          </select>
         </div>
-      )}
-      {/* Disabled until the NATIONAL number is complete for the chosen
-          country — the old phone.length !== 10 gate is what left a +27
-          client with a dead button no matter what he typed. */}
-      <button
-        type="submit"
-        disabled={status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2}
-        style={{ ...buttonStyle(status === 'loading' || !nationalNumberOk(dialCode, phoneLocal) || !name || !email || !password || !password2), ...fullRow, justifySelf: 'center', minWidth: 240 }}
-      >
-        {status === 'loading' ? 'Sending…' : 'Sign Up'}
-      </button>
+        <input
+          className="geo-field"
+          type="tel"
+          required
+          placeholder={dialEntryFor(dialCode).len ? `${dialEntryFor(dialCode).len}-digit mobile number` : 'Mobile number'}
+          value={phoneLocal}
+          onChange={(e) => applyPhoneParts(dialCode, e.target.value)}
+          style={inputStyle}
+        />
+      </div>
       {dialCode !== '91' && (
-        <div style={{ ...fullRow, textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ fontSize: 12, color: SU.faint, fontFamily: "'Inter', sans-serif", marginBottom: 18 }}>
           Enter your number without the +{dialCode}. International accounts are billed in $.
         </div>
       )}
-      <div style={{ ...fullRow, textAlign: 'center', fontSize: 12, color: C.inkFaint, fontFamily: "'Inter', sans-serif" }}>
-        We&rsquo;ll send a verification code to your email to confirm your account.
-      </div>
-      {status === 'error' && (
-        <div style={{ ...fullRow, textAlign: 'center', color: C.red, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
-          {errorMsg}
+
+      {/* 2 · Google — live once the number is complete; a quiet stand-in
+             until then, so the card keeps its shape. */}
+      {GOOGLE_CLIENT_ID && (
+        phoneOk
+          ? <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }} />
+          : (
+            <div title="Enter your mobile number first" aria-disabled="true"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, background: '#fff', color: '#1f1f1f', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, padding: '13px 16px', borderRadius: 8, opacity: .45, cursor: 'not-allowed' }}>
+              <GoogleLogo /> Continue with Google
+            </div>
+          )
+      )}
+
+      {/* 3 · Or email + password */}
+      {GOOGLE_CLIENT_ID && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '22px 0 20px', fontFamily: MONO, fontSize: 11, letterSpacing: '.14em', color: SU.faint, whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, height: 1, background: SU.border }} />OR SET UP WITH EMAIL &amp; PASSWORD<span style={{ flex: 1, height: 1, background: SU.border }} />
         </div>
       )}
+      <div style={{ display: 'grid', gap: 12 }}>
+        <div className="geo-su-two" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <input className="geo-field" type="text" required placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
+          <input className="geo-field" type="email" required placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
+        </div>
+        <div className="geo-su-two" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <input className="geo-field" type="password" required placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, paddingRight: 58 }} />
+            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontFamily: "'Inter', sans-serif", fontSize: 11, color: SU.ghost, pointerEvents: 'none' }}>min 6</span>
+          </div>
+          <input className="geo-field" type="password" required placeholder="Re-type password" value={password2} onChange={(e) => setPassword2(e.target.value)} style={inputStyle} />
+        </div>
+        {/* Turnstile bot gate — Cloudflare renders into this div (see the
+            step effect above). Absent entirely while the site key is empty.
+            Its widget is Cloudflare's own; this row gives it the field's
+            frame and the CLOUDFLARE tag the design shows beside it. */}
+        {TURNSTILE_SITE_KEY && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: SU.field, border: `1px solid ${SU.border}`, borderRadius: 8, padding: '6px 10px 6px 6px', minHeight: 44 }}>
+            <div ref={captchaRef} style={{ flex: 1, minWidth: 0 }} />
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '.1em', color: SU.faint, flexShrink: 0 }}>CLOUDFLARE</span>
+          </div>
+        )}
+        {/* Disabled until the NATIONAL number is complete for the chosen
+            country — the old phone.length !== 10 gate is what left a +27
+            client with a dead button no matter what he typed. */}
+        <button type="submit" disabled={!canSubmit} style={buttonStyle(!canSubmit)}>
+          {status === 'loading' ? 'Sending…' : 'Sign Up — start free trial'}
+        </button>
+      </div>
+      {errorLine}
+      {footnote(<>
+        We&rsquo;ll email you a verification code to confirm your account.<br />
+        Already registered? <a href={APP_URL} style={{ color: SU.blue, textDecoration: 'underline' }}>Log in</a>
+      </>)}
     </form>
   );
 }
@@ -1257,29 +1556,28 @@ function Nav() {
       {/* Inside the sticky wrapper, above the nav row, so the two travel
           together instead of fighting over `top: 0`. */}
       <InstallAppStrip />
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/logo.svg" alt="Geometriya" width="26" height="26" style={{ display: 'block' }} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 17, letterSpacing: '.14em', color: RD.blue }}>GEOMETRIYA</span>
-        </div>
-        <div className="geo-nav-links" style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
-          {/* Label and anchor are separate now — "Start here" can't derive its
-              own href by lowercasing (it would produce "#start here"). */}
-          {[['Start here', 'start'], ['Method', 'method'], ['Tools', 'tools'], ['Pricing', 'pricing']].map(([label, id]) => (
-            <a key={id} href={`#${id}`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>{label}</a>
+      <div className="geo-wrap" style={{ paddingTop: 16, paddingBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <a href="#" aria-label="Geometriya — top of page" style={{ display: 'block', flexShrink: 0 }}>
+          <img src="/assets/geometriya-lockup-dark.svg" alt="Geometriya" style={{ height: 26, display: 'block' }} />
+        </a>
+        <div className="geo-nav-links" style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+          {/* Two anchors only (Anand, 5-Sep-2026): Scan / Practise / Method
+              are one scroll away and just crowded the bar. Geo Tutor keeps
+              the NEW pill because it is the one thing nobody has seen yet. */}
+          {[['Geo Tutor', 'learn', true], ['Pricing', 'pricing']].map(([label, id, isNew]) => (
+            <a key={id} href={`#${id}`} className="geo-nav-link" style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>
+              {label}{isNew && <span className="geo-new-pill">NEW</span>}
+            </a>
           ))}
           <a href="#" onClick={e => { e.preventDefault(); setShowSubCheck(true); }} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>My Plan</a>
-          {/* Desktop's actual one-click install path — the mobile install
-              strip above is hidden here (>860px), and until this existed
-              nothing in the nav offered install at all despite the strip's
-              own comment assuming it did. Hidden on mobile by the same
-              `a:not(:last-child)` rule that trims Method/Tools/Pricing/My
-              Plan, so it never duplicates the strip. Same ?install=1
-              hand-off the strip uses — app.geometricalanalysis.com reads it
-              generically and surfaces its install prompt immediately. */}
-          <a href={`${APP_URL}/?install=1`} style={{ color: RD.inkDim, textDecoration: 'none', fontSize: 15 }}>Get the app</a>
-          <a href={APP_URL} style={{ color: RD.ink, textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Login</a>
-          <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none' }}>Try It Free</a>
+          {/* "Get the app" and "Login" both opened app.geometricalanalysis.com
+              (the former with ?install=1), so they are one link now. The
+              install prompt is the app's own business once you are in, and
+              the mobile strip above still offers it here. Stays visible on
+              phones (see the geo-nav-login rule) — an existing client on
+              mobile should not have to hunt for the way in. */}
+          <a href={APP_URL} className="geo-nav-login" style={{ color: RD.ink, textDecoration: 'none', fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap' }}>Start app</a>
+          <a href="#access" style={{ background: RD.blue, boxShadow: '0 0 24px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 14, padding: '10px 22px', borderRadius: 6, textDecoration: 'none', whiteSpace: 'nowrap' }}>Try It Free</a>
         </div>
       </div>
       <SubscriptionCheckModal open={showSubCheck} onClose={() => setShowSubCheck(false)} />
@@ -1362,30 +1660,134 @@ export default function GeometriyaLanding() {
   }, []);
   // Grab ?ref= on arrival, before any in-page navigation can drop it.
   useEffect(() => { captureReferralCode(); }, []);
+  // Geo Tutor demo: stays still until the visitor asks for it (Anand,
+  // 5-Sep-2026 — it used to start cycling on load, which reads as the page
+  // talking at you). The Play button and the Learn section's walkthrough
+  // button are the only two things that start it; the state lives here so
+  // both can reach it.
+  const [tutorPlaying, setTutorPlaying] = useState(false);
+  // Stable identity on purpose: the demo keeps it in an effect dependency
+  // list, and a fresh arrow on every render would restart the speech.
+  const stopTutor = useCallback(() => setTutorPlaying(false), []);
+  // "Take the tour" — the app's own first-login tour (OnboardingTour.jsx),
+  // opened right here on the site. Anand, 5-Sep-2026: this replaces the
+  // "60-second walkthrough" video the design had pencilled in.
+  const [showTour, setShowTour] = useState(false);
+  const openTour = useCallback((e) => { e.preventDefault(); setTutorPlaying(false); setShowTour(true); }, []);
+  const tourBtn = (style) => <a href="#" onClick={openTour} style={style}>🚀 Take the tour</a>;
+  const secondaryBtn = { display: 'inline-block', border: '1px solid rgba(148,170,220,.3)', color: RD.ink, fontWeight: 500, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none', whiteSpace: 'nowrap' };
   return (
     <div style={{ background: PAGE_BG, color: RD.ink, minHeight: '100vh', fontFamily: "'Space Grotesk', sans-serif" }}>
       <style>{FONTS}{HERO_MONITOR_CSS}{RD_PANEL_CSS}{`
         html { scroll-behavior: smooth; }
+        /* The nav is sticky (~71px tall on desktop, taller on a phone while
+           the install strip shows), so an anchor jump must stop short of it
+           or the section's eyebrow and any floating badge land underneath. */
+        section[id] { scroll-margin-top: 80px; }
+        /* The signup section carries 80px of its own top padding and a card
+           taller than most windows, so "Try It Free" should land with the
+           CARD just under the nav — not the section's padded edge, which
+           left the Sign Up button below the fold (Anand, 5-Sep). */
+        section#access { scroll-margin-top: 0; }
         .geo-badge { display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; color:${C.inkFaint}; border:1px solid ${C.line}; padding:5px 10px; border-radius:20px; }
         .geo-card { background:${C.bgPanel}; border:1px solid ${C.line}; transition: border-color 0.25s ease, transform 0.25s ease; }
         .geo-card:hover { border-color: var(--hc); transform: translateY(-2px); }
+        /* Design 3a layout: one 1280px column with 48px sides on desktop,
+           24px on phones. Vertical padding is set per block, never here. */
+        .geo-wrap { max-width:1280px; margin:0 auto; padding-left:48px; padding-right:48px; box-sizing:border-box; }
+        .geo-sec { padding-top:72px; padding-bottom:72px; }
+        .geo-sec-grid { display:grid; grid-template-columns:260px 1fr; gap:64px; }
+        /* The hero owns the whole first screen (viewport minus the 72px nav)
+           and centres its content in it, so on a tall window it does not
+           hang at the top with the ticker strip peeking in underneath. On a
+           short window it simply grows to fit, never clips. */
+        .geo-hero { min-height: calc(100vh - 72px); display:flex; align-items:center; padding-top:28px; padding-bottom:28px; }
+        .geo-hero > .geo-hero-grid { width:100%; }
+        /* On a short desktop window (a laptop with the bookmarks bar showing,
+           or browser zoom above 100%) the hero would otherwise push its last
+           row under the fold. Trim the padding, the headline and the monitor
+           until the whole block fits the first screen again. */
+        @media (min-width: 861px) and (max-height: 780px) {
+          .geo-hero { padding-top:14px; padding-bottom:14px; }
+          .geo-hero h1 { font-size: clamp(30px, 3.5vw, 44px) !important; }
+          .geo-hero .monitor-wrap { max-width: 420px; }
+        }
+        .geo-nav-link { display:inline-flex; align-items:center; gap:8px; }
+        .geo-new-pill { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; color:${RD.cyan}; border:1px solid rgba(53,208,224,.4); border-radius:999px; padding:2px 7px; line-height:1.3; }
+        .geo-tutor-demo { display:grid; grid-template-columns:1fr 300px; }
+        /* The chart column stretches to the transcript's height and centres
+           the capture in it, so the chart sits level between the side panels
+           rather than pinned to the top with black underneath. */
+        .geo-tutor-chart { min-height:360px; }
+        .geo-tutor-tag { bottom: calc(100% + 10px); }
+        /* The flash: the app's refs pulse the element while the sentence is
+           spoken; re-keyed per sentence so each one starts bright. */
+        .geo-tutor-flash circle, .geo-tutor-flash line { fill:none; stroke:${RD.gold}; stroke-width:5; stroke-linecap:round; filter:drop-shadow(0 0 6px rgba(230,164,25,.9)); animation: gt-flash .55s ease-in-out infinite alternate; }
+        @keyframes gt-flash { from { opacity:.2; } to { opacity:1; } }
+        .geo-tutor-line { color:${RD.inkFaint}; cursor:pointer; }
+        .geo-tutor-line b { font-weight:inherit; color:inherit; }
+        .geo-tutor-line.active { padding:10px; margin:0 -10px; border-radius:6px; background:rgba(53,208,224,.08); border:1px solid rgba(53,208,224,.3); font-weight:500; color:${RD.ink}; }
+        .geo-tutor-line.active b { color:${RD.gold}; }
+        .geo-ms-row { display:grid; grid-template-columns:130px 1fr 90px 90px; gap:0 14px; }
+        .geo-two-col { display:grid; grid-template-columns:1fr 1fr; gap:40px; }
+        .geo-method-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid ${RD.border}; }
+        .geo-method-cell { padding:26px 28px 26px 0; border-bottom:1px solid ${RD.border}; }
+        .geo-method-cell:nth-child(2n) { padding:26px 0 26px 28px; }
+        .geo-method-cell:nth-child(2n+1) { border-right:1px solid ${RD.border}; }
+        .geo-method-cell:nth-last-child(-n+2) { border-bottom:none; }
+        .geo-pricing-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch; }
+        /* Signup card (design 4a): flat fields, blue focus ring, own chevron. */
+        .geo-field::placeholder { color:#5c7699; }
+        .geo-field:focus { border-color: rgba(79,127,255,.5) !important; box-shadow: 0 0 0 3px rgba(79,127,255,.12); }
+        .geo-select-wrap:focus-within > .geo-field { border-color: rgba(79,127,255,.5) !important; box-shadow: 0 0 0 3px rgba(79,127,255,.12); }
+        .geo-select-wrap option { background:#0c1526; color:#e8edf8; }
         /* Desktop already has the app one click away in the nav — the strip is
            only worth the vertical space on a phone. */
         .geo-install-strip { display: none; }
-        @media (max-width: 860px) { .geo-nav-links { gap: 16px !important; } .geo-nav-links a:not(:last-child) { display:none; } .geo-hero-grid { grid-template-columns: 1fr !important; } .geo-tools-grid { grid-template-columns: 1fr 1fr !important; } .geo-pricing-grid { grid-template-columns: 1fr !important; }
+        @media (max-width: 860px) {
+          .geo-wrap { padding-left:24px; padding-right:24px; }
+          .geo-sec { padding-top:56px; padding-bottom:56px; }
+          section[id] { scroll-margin-top: 128px; }
+          .geo-sec-grid { grid-template-columns:1fr; gap:32px; }
+          .geo-hero { min-height:0; padding-top:40px; padding-bottom:56px; }
+          .geo-nav-links { gap: 16px !important; }
+          /* Everything but Login and Try It Free folds away on a phone. */
+          .geo-nav-links a:not(:last-child):not(.geo-nav-login) { display:none !important; }
+          .geo-hero-grid { grid-template-columns: 1fr !important; }
+          .geo-tutor-demo { grid-template-columns:1fr; }
+          /* Phones show the whole capture at its own shape — a forced 538px
+             minimum width would push the swing-low ring off the left edge. */
+          .geo-tutor-chart { --tutor-min-w: 0px; min-height:0; height:auto; aspect-ratio: 1388 / 930; }
+          .geo-tutor-tag { bottom:auto; top:8px; left:8px !important; }
+          .geo-tutor-transcript { border-left:none !important; border-top:1px solid ${RD.border}; }
+          .geo-two-col { grid-template-columns:1fr; gap:24px; }
+          .geo-method-grid { grid-template-columns:1fr; }
+          .geo-method-cell, .geo-method-cell:nth-child(2n) { padding:22px 0; border-right:none; border-bottom:1px solid ${RD.border}; }
+          .geo-method-cell:last-child { border-bottom:none; }
+          .geo-pricing-grid { grid-template-columns: 1fr; }
+          .geo-access-grid { grid-template-columns: 1fr !important; gap: 36px !important; }
           .geo-install-strip { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid ${C.line}; background: rgba(79,127,255,.09); }
         }
-        @media (max-width: 520px) { .geo-tools-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 520px) {
+          .geo-su-two { grid-template-columns: 1fr !important; }
+          .geo-su-phone { grid-template-columns: 1fr !important; }
+          /* Methods wrap under the scrip; the header simply drops that column. */
+          .geo-ms-row { grid-template-columns:1fr auto auto; gap:6px 14px; }
+          .geo-ms-row .geo-ms-methods { grid-column:1 / -1; }
+          .geo-ms-head .geo-ms-methods { display:none; }
+        }
       `}</style>
 
       <Nav />
+      <OnboardingTour isOpen={showTour} onClose={() => setShowTour(false)}
+        onWatchVideo={(id) => { setShowTour(false); window.open(youtubeUrl(id), '_blank', 'noopener,noreferrer'); }} />
 
       {/* HERO */}
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 24px 40px' }}>
+      <section className="geo-wrap geo-hero">
         <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 56, alignItems: 'center' }}>
           <div>
-            <div style={{ display: 'inline-block', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#7ea2ff', border: '1px solid rgba(126,162,255,.35)', borderRadius: 999, padding: '6px 16px' }}>POWERED BY MITOTIC SCALING</div>
-            <h1 style={{ fontSize: 'clamp(34px, 4.4vw, 48px)', fontWeight: 700, lineHeight: 1.08, margin: '18px 0 18px', letterSpacing: '-.02em' }}>
+            <div style={{ display: 'inline-block', fontFamily: MONO, fontSize: 11.5, letterSpacing: '.2em', color: '#7ea2ff', border: '1px solid rgba(126,162,255,.35)', borderRadius: 999, padding: '6px 16px' }}>POWERED BY MITOTIC SCALING</div>
+            <h1 style={{ fontSize: 'clamp(34px, 4.6vw, 52px)', fontWeight: 700, lineHeight: 1.08, margin: '14px 0 14px', letterSpacing: '-.02em' }}>
               Markets move in <RdBrand>geometry,</RdBrand><br />we just draw it.
             </h1>
             {/* Plain English FIRST. The old subhead opened on a feature list
@@ -1394,7 +1796,7 @@ export default function GeometriyaLanding() {
                 visitor couldn't tell what the product actually does. The
                 poetic line still closes it; it just no longer has to carry
                 the explaining. */}
-            <p style={{ fontSize: 15.5, lineHeight: 1.6, color: RD.inkDim, maxWidth: 500, marginBottom: 24 }}>
+            <p style={{ fontSize: 15.5, lineHeight: 1.6, color: RD.inkDim, maxWidth: 500, marginTop: 0, marginBottom: 18 }}>
               <RdBrand>Geometriya</RdBrand> is a market-analysis platform that reads the relationship
               between <span style={{ color: RD.ink }}>price, time and geometry</span> &mdash; to show you the levels that
               matter, which way a move is pointing, and where it may turn.<br />
@@ -1402,11 +1804,11 @@ export default function GeometriyaLanding() {
                 Every chart hides a geometry. <RdBrand>Geometriya</RdBrand> finds it.
               </span>
             </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 18 }}>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
               <a href="#access" style={{ background: RD.blue, boxShadow: '0 6px 20px rgba(79,127,255,.35)', color: '#FFFFFF', fontWeight: 600, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>Try It Free</a>
-              <a href="#tools" style={{ border: '1px solid rgba(148,170,220,.3)', color: RD.ink, fontWeight: 500, fontSize: 15, padding: '12px 26px', borderRadius: 6, textDecoration: 'none' }}>See the tools →</a>
+              {tourBtn(secondaryBtn)}
             </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'rgba(47,191,113,.12)', border: '1px solid rgba(47,191,113,.4)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, maxWidth: 480 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'rgba(47,191,113,.12)', border: '1px solid rgba(47,191,113,.4)', borderRadius: 8, padding: '10px 16px', marginBottom: 12, maxWidth: 480 }}>
               <span style={{ color: RD.green, fontSize: 17, flexShrink: 0 }}>✓</span>
               <span style={{ fontSize: 13.5, lineHeight: 1.5, color: RD.ink, fontWeight: 600 }}>
                 Free forever after your trial — 20 hand-picked stocks + NIFTY&nbsp;50 &amp; BANKNIFTY, no expiry, no catch.
@@ -1423,160 +1825,99 @@ export default function GeometriyaLanding() {
 
       <TickerStrip />
 
-      {/* FLAGSHIP — Masterstroke + Paper Trading.
-          The site described the 2025 toolkit and said nothing about either
-          of these, which is backwards: they are the two features that
-          answer a newcomer's actual questions ("which stocks?" and "how do
-          I know this works?") without needing the method explained first. */}
-      <section id="start" style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 24px 40px' }}>
-        <div style={{ maxWidth: 700, marginBottom: 44 }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 16 }}>START HERE</div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.1, marginBottom: 18 }}>
-            Two answers to the only<br />two questions that matter.
-          </h2>
-          <p style={{ color: RD.inkDim, fontSize: 17, lineHeight: 1.65 }}>
-            {/* The second question changed with the product. It used to be
-                "how do I know this works", answered by a strategy trading a
-                practice book for you. Paper trading is your own hands now, so
-                the honest question it answers is whether YOU can work the
-                method — which is the more useful one anyway. */}
-            Which stocks are worth looking at today &mdash; and can I practise the method before any real money is on it?
-          </p>
-        </div>
-        <div className="geo-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      {/* 01 — LEARN · Geo Tutor. The headline new feature, so it comes first:
+          the app's Voice Assistance narrates every study on the user's own
+          chart and rings the element each sentence names. The copy says
+          what it does — explains what is drawn — and the note says what it
+          is not: a buy or sell call. */}
+      <NumberedSection
+        id="learn"
+        noTop
+        eyebrow="01 — LEARN · NEW"
+        title="Geo Tutor narrates the chart as it's drawn."
+        body="Every study in the toolkit, explained live on your own stock. Each sentence rings the exact swing, angle or level it names. Plus a Help Centre with video walkthroughs and 26 tool guides."
+        note="Explains what is drawn and why. Not a buy or sell call."
+      >
+        <GeoTutorDemo playing={tutorPlaying} onToggle={() => setTutorPlaying(v => !v)} onEnd={stopTutor} />
+      </NumberedSection>
 
-          {/* ── Masterstroke ── */}
-          <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '34px 30px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <RdCorners />
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#E8B93C' }}>✦ MASTERSTROKE</div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
-              One scan. Your best<br />candidates, ranked.
-            </div>
-            <div style={{ fontSize: 14.5, lineHeight: 1.65, color: RD.inkDim }}>
-              Every tool in Geometriya reads the same chart independently &mdash; the 45° angle, the swing
-              it projects from, market structure, Gann arcs, time cycles, momentum, the weekly trend,
-              strength against the index. Masterstroke runs all of them across your whole list and
-              counts the votes.
-            </div>
-            {/* The real score chip, in the app's own Masterstroke gold — the
-                site and the product should look like one thing. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(232,185,60,.07)', border: '1px solid rgba(232,185,60,.3)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, flexWrap: 'wrap' }}>
-              <span style={{ color: '#E8B93C', fontWeight: 700 }}>✦ 81</span>
-              <span style={{ color: RD.green, fontWeight: 700 }}>▲ BULL</span>
-              <span style={{ color: RD.inkFaint }}>7 methods agree</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, lineHeight: 1.55, color: RD.inkDim }}>
-              {['Readings that agree add points; readings that disagree subtract them — so the top of the list is genuine agreement, not one indicator’s opinion.',
-                'Tap any row and every vote is spelled out with its score, including the ones pulling the other way.',
-                'Open the chart with exactly the tools that fired already drawn, so you can check the reading yourself.'].map((t, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10 }}>
-                  <span style={{ color: '#E8B93C', flexShrink: 0 }}>✓</span><span>{t}</span>
-                </div>
-              ))}
-            </div>
-            {/* The same caveat the app itself prints under every Masterstroke
-                breakdown. Saying it on the marketing page too keeps the two
-                honest with each other — and a score is genuinely not a call. */}
-            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12, marginTop: 'auto' }}>
-              A high score is not a recommendation &mdash; it means several independent readings of the
-              same chart agree today. What you do with that is still your call.
-            </div>
-          </div>
+      {/* 02 — SCAN · Masterstroke. Same caveat the app prints under every
+          breakdown, kept word for word: a score is agreement, not a call. */}
+      <NumberedSection
+        id="scan"
+        eyebrow="02 — SCAN"
+        title="Two dozen scanners. One ranked list."
+        body="Masterstroke runs every reading across your whole list and counts the votes. Readings that agree add points; readings that disagree subtract them."
+        note="A high score is not a recommendation — it means several independent readings of the same chart agree today."
+      >
+        <MasterstrokeTable />
+      </NumberedSection>
 
-          {/* ── Paper trading ── */}
-          <div className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '34px 30px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <RdCorners />
-            {/* REWRITTEN 3-Sep-2026, and the reason matters more than the
-                words. This panel used to say a strategy traded a practice
-                book from our servers every five minutes, that you could
-                close the laptop and it would keep going, and that your book
-                and the strategy's could be scored against each other. All of
-                that was true until the client paper algo was retired that
-                morning (see backend/server-paper.js) and none of it was true
-                afterwards. Copy describing a feature that no longer exists is
-                not stale, it is a false claim about a financial product — so
-                every line below is one the app can be held to today. */}
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.2em', color: '#6FA0FF' }}>📓 PAPER TRADE &middot; PRACTICE MONEY</div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
-              Practise the method.<br />Before you risk a rupee.
-            </div>
-            <div style={{ fontSize: 14.5, lineHeight: 1.65, color: RD.inkDim }}>
-              Start with a ₹10,00,000 practice book and place your own trades at real NSE prices.
-              No broker. No deposit. Nothing to install. Positions are valued at each day&rsquo;s
-              close, so what you come back to is a scorecard you can study &mdash; not a ticker
-              to sit in front of.
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(111,160,255,.07)', border: '1px solid rgba(111,160,255,.3)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, flexWrap: 'wrap' }}>
+      {/* 03 — PRACTISE · Paper Trade. Rewritten 3-Sep-2026 when the client
+          paper algo was retired: every line here is one the app can be held
+          to today — the three fill sources and the recorded source are
+          paper-fill.js, the end-of-day mark is paperLastClose, charges are
+          paperCharges, reset counting is the attempt counter. Practice money
+          only; nothing here places a real order. */}
+      <NumberedSection
+        id="practise"
+        eyebrow="03 — PRACTISE"
+        title="Paper trade the method. Before you risk a rupee."
+      >
+        <div className="geo-two-col" style={{ fontSize: 15, lineHeight: 1.65, color: RD.inkDim }}>
+          <div>
+            <p style={{ margin: '0 0 16px' }}>
+              Start with a <strong style={{ color: RD.ink }}>₹10,00,000 practice book</strong> and place your own trades at real NSE prices.
+              No broker. No deposit. Nothing to install. Positions are valued at each day&rsquo;s close, so what you come
+              back to is a scorecard you can study &mdash; not a ticker to sit in front of.
+            </p>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(111,160,255,.07)', border: '1px solid rgba(111,160,255,.3)', fontFamily: MONO, fontSize: 13, flexWrap: 'wrap' }}>
               <span style={{ color: RD.green, fontWeight: 700 }}>📓 PRACTICE BOOK</span>
               <span style={{ color: RD.ink, fontWeight: 700 }}>₹10,00,000</span>
-              <span style={{ color: RD.inkFaint }}>practice money — not real</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, lineHeight: 1.55, color: RD.inkDim }}>
-              {/* Each of these is checkable against the app: the three fill
-                  sources and the recorded source are paper-fill.js; the
-                  end-of-day mark is paperLastClose; charges are
-                  paperCharges; reset counting is the attempt counter. */}
-              {['You name the price. Your broker’s live price if you connect one, a price you type, or the last close — and every fill records which of the three it was.',
-                'Realistic charges on both sides, so the number you end with is the number you would really have ended with.',
-                'Open positions are marked at the closing price, the same one the exchange published — no invented mid-day valuations.',
-                'Start again whenever you like — resets are counted openly, never quietly erased.'].map((t, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10 }}>
-                  <span style={{ color: '#6FA0FF', flexShrink: 0 }}>✓</span><span>{t}</span>
-                </div>
-              ))}
-            </div>
-            {/* The broker question, answered as a choice rather than a
-                barrier: nothing here needs one, and connecting yours buys a
-                live chart and a live price to trade against. */}
-            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: RD.inkFaint, borderTop: `1px solid ${RD.border}`, paddingTop: 12, marginTop: 'auto' }}>
-              Want a live chart and a live price to trade against? Connect your own broker
-              &mdash; free, one tap. Without one, the last published close stands in, and
-              nothing else changes.
+              <span style={{ color: RD.inkFaint }}>not real</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* METHOD */}
-      <section id="method" style={{ maxWidth: 1180, margin: '0 auto', padding: '96px 24px 40px' }}>
-        <div style={{ maxWidth: 640, marginBottom: 48 }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 16 }}>THE METHOD</div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.1, marginBottom: 18 }}>
-            Four disciplines.<br />One <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, color: RD.blue, textTransform: 'uppercase', letterSpacing: '.03em' }}>geometry</span> engine.
-          </h2>
-          <p style={{ color: RD.inkDim, fontSize: 17, lineHeight: 1.65 }}>
-            Precision without filters. Geometry without compromise.
-          </p>
-        </div>
-        <div className="geo-tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-          {RD_METHODS.map(m => (
-            <div key={m.num} className="rd-panel" style={{ border: `1px solid ${RD.border}`, borderRadius: 6, background: RD.panel, padding: '32px 26px 34px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <RdCorners />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <RdGlyph kind={m.kind} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: RD.inkFaint }}>{m.num}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14.5 }}>
+            {['You name the price: your broker’s live price, a typed price, or the last close — every fill records which.',
+              'Realistic charges on both sides.',
+              'Start again whenever you like — resets are counted openly, never quietly erased.',
+              'Connect Dhan or Angel One for a live chart — free, one tap.'].map((t, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10 }}>
+                <span style={{ color: '#6FA0FF', flexShrink: 0 }}>✓</span><span>{t}</span>
               </div>
-              <div style={{ fontSize: 20, fontWeight: 600 }}>{m.title}</div>
+            ))}
+          </div>
+        </div>
+      </NumberedSection>
+
+      {/* 04 — METHOD. The same four disciplines as before, now a hairline
+          2×2 instead of four cards. */}
+      <NumberedSection
+        id="method"
+        eyebrow="04 — METHOD"
+        title={<>Four disciplines. One <RdBrand>geometry</RdBrand> engine.</>}
+        body="Precision without filters. Geometry without compromise."
+      >
+        <div className="geo-method-grid">
+          {RD_METHODS.map(m => (
+            <div key={m.num} className="geo-method-cell">
+              <div style={{ fontFamily: MONO, fontSize: 11, color: RD.inkFaint, marginBottom: 10 }}>{m.num}</div>
+              <div style={{ fontSize: 19, fontWeight: 600, marginBottom: 8 }}>{m.title}</div>
               <div style={{ fontSize: 14.5, lineHeight: 1.6, color: RD.inkDim }}>{m.body}</div>
             </div>
           ))}
         </div>
-      </section>
+      </NumberedSection>
 
-      <ContrastSection />
-
-      {/* PRICING */}
-      <section id="pricing" style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 24px 110px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 18 }}>PRICING</div>
-          <h2 style={{ margin: '0 0 12px', fontSize: 'clamp(28px, 3.6vw, 44px)', fontWeight: 700, letterSpacing: '-.015em' }}>
-            Simple pricing. Start free, forever.
-          </h2>
-          <p style={{ margin: 0, fontSize: 15.5, color: RD.inkDim }}>
-            No hidden charges. No surprise renewals. Upgrade only when you're ready.
-          </p>
-        </div>
-
+      {/* 05 — PRICING. Prices come from the backend at runtime (planPrices)
+          and are never written into this file. */}
+      <NumberedSection
+        id="pricing"
+        eyebrow="05 — PRICING"
+        title="Simple pricing. Start free, forever."
+        body="No hidden charges. No surprise renewals. Every plan starts with a 30-day free trial — just your mobile number."
+        note="Ready already? Buy directly, or upgrade any time mid-trial from 👤 My Account in the app."
+      >
         {(() => {
           const CYCLES = {
             monthly: { short: 'Monthly', period: '/ month', key: 'monthly', months: 1 },
@@ -1590,87 +1931,73 @@ export default function GeometriyaLanding() {
             : null;
 
           return (
-            <div className="geo-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 22, alignItems: 'stretch' }}>
+            <div className="geo-pricing-grid">
 
               {/* STARTER — free forever */}
-              <div className="rd-panel" style={{ border: '1px solid rgba(47,191,113,.5)', borderRadius: 6, background: RD.panel, padding: '32px 28px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                <RdCorners />
-                <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: RD.green, color: '#06170f', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: '.1em', fontWeight: 700, padding: '5px 14px', borderRadius: 999, whiteSpace: 'nowrap' }}>FREE FOREVER — NO CARD, EVER</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.18em', color: RD.inkDim, marginBottom: 16 }}>STARTER</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+              <div style={{ position: 'relative', border: '1px solid rgba(47,191,113,.5)', borderRadius: 6, background: RD.panel, padding: '34px 28px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: RD.green, color: '#06170f', fontFamily: MONO, fontSize: 11.5, letterSpacing: '.1em', fontWeight: 700, padding: '5px 14px', borderRadius: 999, whiteSpace: 'nowrap' }}>FREE FOREVER — NO CARD, EVER</div>
+                <div style={{ fontFamily: MONO, fontSize: 12.5, letterSpacing: '.18em', color: RD.inkDim, marginBottom: 14 }}>STARTER</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 18 }}>
                   <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>Free</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>forever</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, color: RD.inkFaint }}>forever</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
-                  <span style={{ fontSize: 13.5, color: '#8291ac' }}>Just your mobile number to start</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
-                  {[
-                    '20 hand-picked large-cap stocks + NIFTY 50 & BANKNIFTY',
-                    'Full Geometriya charting workspace',
-                    'Gann, Fibonacci, Vortex & geometric overlay tools',
-                    'Mitotic Scaling on every timeframe',
-                  ].map((t, i) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14.5, color: '#c6d2ea', marginBottom: 26 }}>
+                  {['20 hand-picked large-cap stocks + NIFTY 50 & BANKNIFTY',
+                    'Full charting workspace, Geo Tutor, Mitotic Scaling'].map((t, i) => (
                     <div key={i} style={{ display: 'flex', gap: 10 }}>
-                      <span style={{ color: RD.green, flexShrink: 0 }}>✓</span>
-                      <span style={{ color: '#c6d2ea' }}>{t}</span>
+                      <span style={{ color: RD.green, flexShrink: 0 }}>✓</span><span>{t}</span>
                     </div>
                   ))}
                 </div>
-                <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
                 <a href="#access" onClick={() => setSelectedPlan(null)} style={{
-                  textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
-                  background: 'transparent', color: RD.blue, border: `1px solid rgba(79,127,255,.35)`,
+                  marginTop: 'auto', textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
+                  background: 'transparent', color: RD.blue, border: '1px solid rgba(79,127,255,.35)',
                 }}>Start Free</a>
               </div>
 
               {/* FULL ACCESS — unlimited scrips, billing-cycle preview */}
-              <div className="rd-panel" style={{ border: '1px solid rgba(79,127,255,.6)', borderRadius: 6, background: 'linear-gradient(170deg,#0d1630,#0a1020)', padding: '32px 28px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                <RdCorners />
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.18em', color: RD.blue, marginBottom: 16 }}>FULL ACCESS</div>
-
-                <div style={{ display: 'flex', gap: 4, marginBottom: 18, background: '#0c1526', border: `1px solid ${RD.border}`, borderRadius: 8, padding: 4 }}>
-                  {Object.entries(CYCLES).map(([key, c]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setBillingCycle(key)}
-                      style={{
-                        flex: 1, padding: '7px 4px', borderRadius: 5, border: 'none', cursor: 'pointer',
-                        background: billingCycle === key ? RD.blue : 'transparent',
-                        color: billingCycle === key ? '#fff' : RD.inkDim,
-                        fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: '.04em', fontWeight: 600,
-                      }}
-                    >{c.short}</button>
-                  ))}
+              <div style={{ border: '1px solid rgba(79,127,255,.6)', borderRadius: 6, background: 'linear-gradient(170deg,#0d1630,#0a1020)', padding: '34px 28px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+                  <div style={{ fontFamily: MONO, fontSize: 12.5, letterSpacing: '.18em', color: RD.blue }}>FULL ACCESS</div>
+                  <div style={{ display: 'flex', gap: 3, background: '#0c1526', border: `1px solid ${RD.border}`, borderRadius: 6, padding: 3 }}>
+                    {Object.entries(CYCLES).map(([key, c]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setBillingCycle(key)}
+                        style={{
+                          padding: '5px 10px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                          background: billingCycle === key ? RD.blue : 'transparent',
+                          color: billingCycle === key ? '#fff' : RD.inkDim,
+                          fontFamily: MONO, fontSize: 11, letterSpacing: '.04em', fontWeight: 600,
+                        }}
+                      >{c.short}</button>
+                    ))}
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.02em' }}>{fmtPrice(planPrices, price)}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: RD.inkFaint }}>{cyc.period}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, color: RD.inkFaint }}>{cyc.period}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 24, marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 22, marginBottom: 14 }}>
                   {perMonth != null && billingCycle !== 'monthly' && (
                     <span style={{ fontSize: 13.5, color: '#8291ac' }}>≈{fmtPrice(planPrices, perMonth)}/month</span>
                   )}
                   {save > 0 && (
-                    <span style={{ background: 'rgba(47,191,113,.14)', color: '#4fd48a', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, letterSpacing: '.05em', padding: '3px 9px', borderRadius: 999 }}>Save {save}%</span>
+                    <span style={{ background: 'rgba(47,191,113,.14)', color: '#4fd48a', fontFamily: MONO, fontSize: 11, fontWeight: 600, letterSpacing: '.05em', padding: '3px 9px', borderRadius: 999 }}>Save {save}%</span>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14.5, marginBottom: 26, flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14.5, color: RD.ink, marginBottom: 26 }}>
                   {[
                     planPrices.currency === 'USD'
                       ? 'Unlimited scrips — NSE, US, FX & JSE'
                       : 'Unlimited NSE scrips',
-                    'Same tools as Starter — full geometry workspace',
-                    'Gann, Fibonacci, Vortex & geometric overlay tools',
-                    'Mitotic Scaling on every timeframe',
-                    'Dream 45 scanner across your watchlist',
+                    'Dream 45 scanner and Masterstroke across your watchlist',
                   ].map((t, i) => (
                     <div key={i} style={{ display: 'flex', gap: 10 }}>
-                      <span style={{ color: RD.green, flexShrink: 0 }}>✓</span>
-                      <span style={{ color: RD.ink }}>{t}</span>
+                      <span style={{ color: RD.green, flexShrink: 0 }}>✓</span><span>{t}</span>
                     </div>
                   ))}
 
@@ -1688,9 +2015,8 @@ export default function GeometriyaLanding() {
                     </div>
                   )}
                 </div>
-                <div style={{ borderTop: `1px solid ${RD.border}`, marginTop: 'auto', marginBottom: 20 }}></div>
                 <a href="#access" onClick={() => setSelectedPlan(null)} style={{
-                  textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
+                  marginTop: 'auto', textAlign: 'center', padding: '13px 0', borderRadius: 6, fontWeight: 600, fontSize: 15.5, textDecoration: 'none',
                   background: RD.blue, color: '#fff', border: 'none',
                 }}>Try It Free</a>
                 {/* Direct purchase — no trial required, and equally for someone
@@ -1700,19 +2026,15 @@ export default function GeometriyaLanding() {
                 <a href={`${APP_URL}/?buy=${cyc.key}`} style={{
                   textAlign: 'center', padding: '11px 0', marginTop: 10, borderRadius: 6, fontWeight: 600, fontSize: 14, textDecoration: 'none',
                   background: 'transparent', color: RD.ink, border: `1px solid ${RD.border}`,
-                }}>Buy now — start today, no trial needed</a>
+                }}>Buy now — no trial needed</a>
               </div>
             </div>
           );
         })()}
-
-        <p style={{ marginTop: 28, textAlign: 'center', fontSize: 12.5, color: RD.inkFaint, fontFamily: "'IBM Plex Mono', monospace" }}>
-          Every plan starts with a 30-day free trial — just your mobile number, nothing to pay upfront. Ready already? Buy directly, or upgrade any time mid-trial from 👤 My Account in the app.
-        </p>
-      </section>
+      </NumberedSection>
 
       {/* FAQ */}
-      <section id="faq" style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px 110px' }}>
+      <section id="faq" style={{ maxWidth: 820, margin: '0 auto', padding: '24px 24px 96px' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, letterSpacing: '.22em', color: RD.cyan, marginBottom: 18 }}>FAQ</div>
         </div>
@@ -1747,7 +2069,7 @@ export default function GeometriyaLanding() {
 
       {/* CTA BAND */}
       <div style={{ borderTop: `1px solid ${RD.border}`, background: 'radial-gradient(700px 320px at 50% 0%, rgba(79,127,255,.14), transparent 70%)' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+        <div className="geo-wrap" style={{ paddingTop: 80, paddingBottom: 80, textAlign: 'center' }}>
           <h2 style={{ margin: '0 0 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(28px, 3.6vw, 42px)', fontWeight: 700, letterSpacing: '-.015em', lineHeight: 1.15 }}>
             Stop reading lagging lines.<br />Start drawing the structure.
           </h2>
@@ -1758,46 +2080,61 @@ export default function GeometriyaLanding() {
         </div>
       </div>
 
-      {/* ACCESS / CTA */}
-      <section id="access" style={{ borderTop: `1px solid ${C.line}`, background: C.bgPanel }}>
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '72px 24px', textAlign: 'center' }}>
-          {/* This used to read "Currently in private testing … your trial
-              starts as soon as we approve your access", which described a
-              gate the system does not have: verify-otp approves and starts
-              the trial in the same call. Measured across 75 real accounts,
-              72 were live within five minutes and the median was 37 seconds
-              — OTP round-trip, not a person. Promising a wait that never
-              happens only talks people out of signing up. */}
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, marginBottom: 14 }}>Start in under a minute</h2>
-          <p style={{ color: C.inkDim, fontSize: 15, lineHeight: 1.7, marginBottom: 10 }}>
-            Sign up with your mobile number, enter the code we email you, and you&rsquo;re straight into the charts. Your 30-day trial starts the moment you verify &mdash; no waiting for approval, no card.
-          </p>
-          <p style={{ color: C.gold, fontSize: 13.5, fontWeight: 600, marginBottom: 28 }}>
-            30-day free trial &middot; Free forever after &middot; Just your mobile number
-          </p>
-          <SignupForm selectedPlan={selectedPlan} clearSelectedPlan={() => setSelectedPlan(null)} />
+      {/* 06 — START · signup (design 4a). Text on the left, the card on the
+          right; the card body is SignupForm, which swaps itself for the OTP
+          step, the success line or the already-registered line inside the
+          same shell. "Start in under a minute" is literal: verify-otp
+          approves and starts the trial in one call — measured across 75
+          real accounts the median was 37 seconds. */}
+      <section id="access" style={{ background: '#0a1424', borderTop: `1px solid ${RD.border}`, borderBottom: `1px solid ${RD.border}` }}>
+        <div className="geo-wrap" style={{ paddingTop: 80, paddingBottom: 80 }}>
+          <div className="geo-access-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 520px', gap: 72, alignItems: 'center', maxWidth: 1180, margin: '0 auto' }}>
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '.2em', color: RD.cyan, marginBottom: 18 }}>06 — START</div>
+              <h2 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.08, margin: '0 0 18px' }}>Start in under a minute.</h2>
+              <p style={{ fontSize: 16, lineHeight: 1.65, color: RD.inkDim, margin: '0 0 32px', maxWidth: 420 }}>
+                Your 30-day trial starts the moment you verify. No approval, no card.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 400 }}>
+                {[GOOGLE_CLIENT_ID ? 'Mobile number, then Google or a password' : 'Mobile number, name, email and a password', 'Enter the code we email you', 'You\u2019re in the charts'].map((t, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <span style={{ flex: 'none', width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(79,127,255,.5)', color: '#7ea2ff', fontFamily: MONO, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 600 }}>{t}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 22, marginTop: 36, fontSize: 13.5, color: RD.inkDim, fontFamily: MONO, flexWrap: 'wrap' }}>
+                {['✓ 30-day free trial', '✓ Free forever after', '✓ No card, ever'].map(t => <span key={t} style={{ whiteSpace: 'nowrap' }}>{t}</span>)}
+              </div>
+            </div>
+            <div style={{ background: '#060a14', border: '1px solid rgba(148,170,220,.14)', borderRadius: 12, padding: 32, boxShadow: '0 30px 60px rgba(0,0,0,.45)', minWidth: 0 }}>
+              <SignupForm selectedPlan={selectedPlan} clearSelectedPlan={() => setSelectedPlan(null)} />
+            </div>
+          </div>
         </div>
       </section>
 
       {/* FOOTER */}
       <footer style={{ borderTop: `1px solid ${RD.border}` }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '36px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src="/logo.svg" alt="Geometriya" width="20" height="20" style={{ display: 'block' }} />
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: '.14em', color: RD.blue }}>GEOMETRIYA</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', fontSize: 14 }}>
-            <a href="#method" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Method</a>
-            <a href="#tools" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Tools</a>
-            <a href="#pricing" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Pricing</a>
-            <a href="#faq" style={{ color: RD.inkFaint, textDecoration: 'none' }}>FAQ</a>
+        <div className="geo-wrap" style={{ paddingTop: 32, paddingBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <a href="#" aria-label="Geometriya — top of page" style={{ display: 'block' }}>
+            <img src="/assets/geometriya-lockup-dark.svg" alt="Geometriya" style={{ height: 20, display: 'block' }} />
+          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap', fontSize: 14 }}>
+            {[['Geo Tutor', '#learn'], ['Scan', '#scan'], ['Practise', '#practise'], ['Method', '#method'], ['Pricing', '#pricing'], ['FAQ', '#faq']].map(([label, href]) => (
+              <a key={href} href={href} style={{ color: RD.inkFaint, textDecoration: 'none' }}>{label}</a>
+            ))}
             <a href="mailto:geometriya.analysis@gmail.com?subject=Geometriya%20Support" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Email</a>
             <a href="https://wa.me/919730224399" target="_blank" rel="noopener noreferrer" style={{ color: RD.inkFaint, textDecoration: 'none' }}>WhatsApp</a>
             <a href="/privacy" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Privacy Policy</a>
             <a href="https://www.geometricalanalysis.com/geo-ctrl-9f21.html" style={{ color: RD.inkFaint, textDecoration: 'none' }}>Admin</a>
             <DonateButton />
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#3d4a68' }}>© 2026 <RdBrand>Geometriya</RdBrand>. Markets are risk.</div>
+          {/* The disclaimer every public surface carries, in the footer where
+              it is on every screen size. */}
+          <div style={{ fontFamily: MONO, fontSize: 12, color: RD.inkGhost, textAlign: 'right', maxWidth: 340, lineHeight: 1.5, marginLeft: 'auto' }}>
+            Analysis and simulation tool, not investment advice — trading involves risk. © 2026 Geometriya.
+          </div>
         </div>
       </footer>
     </div>

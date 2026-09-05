@@ -3,3 +3,7 @@ dist
 .DS_Store
 
 dist-ssr
+
+# Local env (Vite): VITE_GOOGLE_CLIENT_ID for Google sign-in on localhost
+.env.local
+.env.*.local
