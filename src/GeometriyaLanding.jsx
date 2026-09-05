@@ -1368,10 +1368,19 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
             step effect above). Absent entirely while the site key is empty.
             Its widget is Cloudflare's own; this row gives it the field's
             frame and the CLOUDFLARE tag the design shows beside it. */}
+        {/* minWidth:0 + overflow:hidden, measured on Anand's phone 5-Sep-2026.
+            Cloudflare's widget will not render below 300px, and with the tag
+            beside it this row's min-content came to 399px — as a grid item
+            with the default min-width:auto that became a floor the 271px
+            card could not beat, so the whole PAGE laid out at 456px on a
+            384px screen. Everything fixed-position then sized to 456 too,
+            which is what pushed the tour's ✕ and its buttons off-screen.
+            The row may now clip the widget's last pixels on a very narrow
+            phone; the page staying its true width matters more. */}
         {TURNSTILE_SITE_KEY && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: SU.field, border: `1px solid ${SU.border}`, borderRadius: 8, padding: '6px 10px 6px 6px', minHeight: 44 }}>
+          <div className="geo-su-captcha" style={{ display: 'flex', alignItems: 'center', gap: 12, background: SU.field, border: `1px solid ${SU.border}`, borderRadius: 8, padding: '6px 10px 6px 6px', minHeight: 44, minWidth: 0, overflow: 'hidden' }}>
             <div ref={captchaRef} style={{ flex: 1, minWidth: 0 }} />
-            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '.1em', color: SU.faint, flexShrink: 0 }}>CLOUDFLARE</span>
+            <span className="geo-su-cf-tag" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '.1em', color: SU.faint, flexShrink: 0 }}>CLOUDFLARE</span>
           </div>
         )}
         {/* Disabled until the NATIONAL number is complete for the chosen
@@ -1803,8 +1812,12 @@ export default function GeometriyaLanding() {
           .geo-install-strip { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid ${C.line}; background: rgba(79,127,255,.09); }
         }
         @media (max-width: 520px) {
-          .geo-su-two { grid-template-columns: 1fr !important; }
-          .geo-su-phone { grid-template-columns: 1fr !important; }
+          .geo-su-two { grid-template-columns: minmax(0, 1fr) !important; }
+          .geo-su-phone { grid-template-columns: minmax(0, 1fr) !important; }
+          /* Cloudflare's widget will not render below 300px, so on a phone
+             the tag beside it goes and the card thins out to give it room. */
+          .geo-su-cf-tag { display: none; }
+          .geo-su-card { padding: 22px 18px !important; }
           /* Methods wrap under the scrip; the header simply drops that column. */
           .geo-ms-row { grid-template-columns:1fr auto auto; gap:6px 14px; }
           .geo-ms-row .geo-ms-methods { grid-column:1 / -1; }
@@ -2141,7 +2154,7 @@ export default function GeometriyaLanding() {
                 {['✓ 30-day free trial', '✓ Free forever after', '✓ No card, ever'].map(t => <span key={t} style={{ whiteSpace: 'nowrap' }}>{t}</span>)}
               </div>
             </div>
-            <div style={{ background: '#060a14', border: '1px solid rgba(148,170,220,.14)', borderRadius: 12, padding: 32, boxShadow: '0 30px 60px rgba(0,0,0,.45)', minWidth: 0 }}>
+            <div className="geo-su-card" style={{ background: '#060a14', border: '1px solid rgba(148,170,220,.14)', borderRadius: 12, padding: 32, boxShadow: '0 30px 60px rgba(0,0,0,.45)', minWidth: 0 }}>
               <SignupForm selectedPlan={selectedPlan} clearSelectedPlan={() => setSelectedPlan(null)} />
             </div>
           </div>
