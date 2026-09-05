@@ -1086,8 +1086,24 @@ function SignupForm({ selectedPlan, clearSelectedPlan }) {
     fontFamily: "'Space Grotesk', sans-serif",
     marginTop: 4,
   });
+  // Some backend errors end in an instruction — "sign in with that email and
+  // your password, or use Forgot password" — for a screen that only exists
+  // inside the app. Saying that on a page with no such link is a dead end
+  // (Anand hit exactly this signing in with Google on a number already
+  // registered under another email), so those errors carry a way through.
+  const needsAppSignIn = /already has an account|forgot password|sign in with that email/i.test(errorMsg);
   const errorLine = status === 'error' && errorMsg && (
-    <div style={{ textAlign: 'center', color: SU.red, fontSize: 13, fontFamily: "'Inter', sans-serif", marginTop: 12 }}>{errorMsg}</div>
+    <div style={{ textAlign: 'center', color: SU.red, fontSize: 13, lineHeight: 1.55, fontFamily: "'Inter', sans-serif", marginTop: 12 }}>
+      {errorMsg}
+      {needsAppSignIn && (
+        <div style={{ marginTop: 8 }}>
+          <a href={APP_URL} style={{ color: SU.blue, textDecoration: 'underline', fontWeight: 600 }}>
+            Open Geometriya to sign in
+          </a>
+          <span style={{ color: SU.faint }}> — &ldquo;Forgot or need to set a password?&rdquo; is on that screen.</span>
+        </div>
+      )}
+    </div>
   );
   const footnote = (text) => (
     <div style={{ textAlign: 'center', fontFamily: "'Inter', sans-serif", fontSize: 12.5, lineHeight: 1.55, color: SU.faint, marginTop: 16 }}>{text}</div>
