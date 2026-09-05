@@ -1208,7 +1208,13 @@ export default function OnboardingTour({ isOpen, onClose, theme = 'dark', onWatc
         }
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
-        width: 1120, maxWidth: '100%', height: IS_NARROW ? '92vh' : 760, maxHeight: '92vh',
+        width: 1120, maxWidth: '100%', // WEBSITE (measured on Anand's phone, 5-Sep-2026): on Android Chrome a vh
+        // unit is the LARGEST viewport — the one with the address bar hidden —
+        // so 92vh was 690px while the visible area with the bar showing was
+        // 692px minus the overlay's padding. The footer, and with it Skip and
+        // Start tour, sat below the screen. On a phone the card now stretches
+        // to the overlay, which as a fixed element tracks the visible viewport.
+        height: IS_NARROW ? 'auto' : 760, maxHeight: IS_NARROW ? 'none' : '92vh', alignSelf: IS_NARROW ? 'stretch' : 'auto',
         background: cardBg, border: cardBorder, borderRadius: 16,
         boxShadow: cardShadow, color: 'var(--geo-text-primary)',
         display: 'flex', flexDirection: IS_NARROW ? 'column' : 'row', overflow: 'hidden',
@@ -1286,7 +1292,7 @@ export default function OnboardingTour({ isOpen, onClose, theme = 'dark', onWatc
         )}
 
         {/* Detail pane */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 /* WEBSITE: on a phone this column is on the modal's main axis; min-height:auto would keep it at content height and push the footer out */ }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid var(--geo-border)', flexShrink: 0 }}>
             <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--geo-text-faint)', flex: 1 }}>
               Stop {String(idx + 1).padStart(2, '0')} of {String(SLIDES.length).padStart(2, '0')}
