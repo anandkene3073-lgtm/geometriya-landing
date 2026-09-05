@@ -312,8 +312,8 @@ function TickerStrip() {
   const items = ['GANN 1×1 · 45.00°', 'PENTA-VORTEX ARC', 'VORTEX CYCLE T+34', 'MITOTIC SCALE ×2.06', 'SQ9 · 144 · 360'];
   return (
     <div style={{ borderTop: `1px solid ${RD.border}`, borderBottom: `1px solid ${RD.border}`, background: '#070c18' }}>
-      <div className="geo-wrap" style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', fontFamily: MONO, fontSize: 13, letterSpacing: '.14em', color: RD.inkFaint }}>
-        {items.map((t, i) => <span key={i}>{t}</span>)}
+      <div className="geo-wrap geo-ticker" style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', fontFamily: MONO, fontSize: 13, letterSpacing: '.14em', color: RD.inkFaint }}>
+        {items.map((t, i) => <span key={i} style={{ whiteSpace: 'nowrap' }}>{t}</span>)}
       </div>
     </div>
   );
@@ -574,7 +574,7 @@ function GeoTutorDemo({ playing, onToggle, onEnd }) {
         {TUTOR_LINES.map((l, k) => (
           <div key={k} className={`geo-tutor-line${k === i ? ' active' : ''}`} onClick={() => goTo(k)}>{l.text}</div>
         ))}
-        <button type="button" onClick={onToggle} style={{ marginTop: 'auto', textAlign: 'center', padding: 9, borderRadius: 6, border: 'none', background: RD.cyan, color: '#03050b', fontWeight: 600, fontFamily: MONO, fontSize: 11.5, cursor: 'pointer' }}>
+        <button type="button" className="geo-tutor-play" onClick={onToggle} style={{ marginTop: 'auto', textAlign: 'center', padding: 9, borderRadius: 6, border: 'none', background: RD.cyan, color: '#03050b', fontWeight: 600, fontFamily: MONO, fontSize: 11.5, cursor: 'pointer' }}>
           {playing ? '❚❚ Stop narration' : '▶ Play narration'}
         </button>
       </div>
@@ -597,9 +597,9 @@ function MasterstrokeTable() {
     <div>
       {/* The feature's name, in the app's own Masterstroke gold, sitting on
           the table so the eye lands on it before the rows. */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14, fontFamily: MONO }}>
-        <span style={{ fontSize: 13, letterSpacing: '.22em', fontWeight: 700, color: RD.masterstroke, textShadow: '0 0 14px rgba(232,185,60,.35)' }}>✦ MASTERSTROKE</span>
-        <span style={{ fontSize: 11.5, letterSpacing: '.08em', color: RD.inkFaint }}>one scan · every method · ranked</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px 12px', marginBottom: 14, fontFamily: MONO, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 13, letterSpacing: '.22em', fontWeight: 700, color: RD.masterstroke, textShadow: '0 0 14px rgba(232,185,60,.35)', whiteSpace: 'nowrap' }}>✦ MASTERSTROKE</span>
+        <span style={{ fontSize: 11.5, letterSpacing: '.08em', color: RD.inkFaint, whiteSpace: 'nowrap' }}>one scan · every method · ranked</span>
       </div>
     <div style={{ background: RD.panel, border: `1px solid ${RD.border}`, borderRadius: 8, fontFamily: MONO, fontSize: 13, overflow: 'hidden' }}>
       <div className="geo-ms-row geo-ms-head" style={{ padding: '14px 26px', color: RD.inkFaint, fontSize: 11, letterSpacing: '.14em', borderBottom: `1px solid ${RD.border}` }}>
@@ -1754,6 +1754,12 @@ export default function GeometriyaLanding() {
            short window it simply grows to fit, never clips. */
         .geo-hero { min-height: calc(100vh - 72px); display:flex; align-items:center; padding-top:28px; padding-bottom:28px; }
         .geo-hero > .geo-hero-grid { width:100%; }
+        /* The monitor's ::before glow is drawn 40px outside its box. On a
+           phone that reached past the screen and widened the document to
+           413px (measured on the device, 5-Sep-2026) — and a wider document
+           is what every fixed overlay then sizes to. Clip the x-axis only;
+           clip, unlike hidden, creates no scroll container. */
+        .geo-hero { overflow-x: clip; }
         /* On a short desktop window (a laptop with the bookmarks bar showing,
            or browser zoom above 100%) the hero would otherwise push its last
            row under the fold. Trim the padding, the headline and the monitor
@@ -1798,6 +1804,15 @@ export default function GeometriyaLanding() {
         @media (max-width: 860px) {
           .geo-wrap { padding-left:24px; padding-right:24px; }
           .geo-sec { padding-top:56px; padding-bottom:56px; }
+          /* Five labels stacked one per line ate a whole screen — one
+             scrolling row instead, scrollbar hidden. */
+          .geo-ticker { flex-wrap: nowrap !important; justify-content: flex-start !important; overflow-x: auto; gap: 28px !important; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+          .geo-ticker::-webkit-scrollbar { display: none; }
+          /* Finger-sized targets: 44px is the floor a thumb can hit. */
+          .geo-tutor-play { padding: 13px !important; }
+          .geo-cycle-btn { padding: 10px 14px !important; }
+          .geo-footer-links a { padding: 8px 0; display: inline-block; }
+          .geo-footer-links { gap: 6px 22px !important; }
           section[id] { scroll-margin-top: 128px; }
           .geo-sec-grid { grid-template-columns:1fr; gap:32px; }
           .geo-hero { min-height:0; padding-top:40px; padding-bottom:56px; }
@@ -1826,6 +1841,8 @@ export default function GeometriyaLanding() {
              the tag beside it goes and the card thins out to give it room. */
           .geo-su-cf-tag { display: none; }
           .geo-su-card { padding: 22px 18px !important; }
+          /* Cloudflare's widget is 300px; without its frame the row is 315. */
+          .geo-su-captcha { padding: 0 !important; border: none !important; background: transparent !important; }
           /* Methods wrap under the scrip; the header simply drops that column. */
           .geo-ms-row { grid-template-columns:1fr auto auto; gap:6px 14px; }
           .geo-ms-row .geo-ms-methods { grid-column:1 / -1; }
@@ -2019,6 +2036,7 @@ export default function GeometriyaLanding() {
                       <button
                         key={key}
                         type="button"
+                        className="geo-cycle-btn"
                         onClick={() => setBillingCycle(key)}
                         style={{
                           padding: '5px 10px', borderRadius: 4, border: 'none', cursor: 'pointer',
@@ -2175,7 +2193,7 @@ export default function GeometriyaLanding() {
           <a href="#" aria-label="Geometriya — top of page" style={{ display: 'block' }}>
             <img src="/assets/geometriya-lockup-dark.svg" alt="Geometriya" style={{ height: 20, display: 'block' }} />
           </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap', fontSize: 14 }}>
+          <div className="geo-footer-links" style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap', fontSize: 14 }}>
             {[['Geo Tutor', '#learn'], ['Scan', '#scan'], ['Practise', '#practise'], ['Method', '#method'], ['Pricing', '#pricing'], ['FAQ', '#faq']].map(([label, href]) => (
               <a key={href} href={href} style={{ color: RD.inkFaint, textDecoration: 'none' }}>{label}</a>
             ))}
