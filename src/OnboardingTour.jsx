@@ -973,9 +973,35 @@ const SLIDES = [
 
 // Best-effort MALE voice fallback when the user hasn't picked one — same
 // heuristic as the Help voiceover (browsers expose no voice gender).
+// WEBSITE: getVoices() is populated asynchronously, and on Android it is
+// routinely EMPTY for the first second or two. Speaking then set no voice at
+// all, so the engine fell back to its own default — female on most phones,
+// which is what Anand heard on 5-Sep-2026. Wait for the list (event, poll and
+// a ceiling, because some engines never fire voiceschanged) before choosing.
+const waitForVoices = (budgetMs = 4000) => new Promise(resolve => {
+  const synth = window.speechSynthesis;
+  const now = synth.getVoices();
+  if (now.length) { resolve(now); return; }
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearInterval(poll); clearTimeout(ceiling);
+    synth.removeEventListener?.('voiceschanged', finish);
+    resolve(synth.getVoices());
+  };
+  const poll = setInterval(() => { if (synth.getVoices().length) finish(); }, 200);
+  const ceiling = setTimeout(finish, budgetMs);
+  synth.addEventListener?.('voiceschanged', finish);
+});
+
 const pickFallbackVoice = (voices, lang) => {
-  const maleRe = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel)/i;
-  const femaleRe = /(female|heera|neerja|swara|kalpana|zira|susan|samantha|veena)/i;
+  // Android's Google TTS names voices "en-in-x-end#male_1-local" and
+  // "en-us-x-tpf#female_1-local", so the plain male/female tokens below
+  // match there too — the female guard is what stops "female_1" scoring as
+  // a male match. Windows and Apple names are covered by the given names.
+  const maleRe = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan|arthur|brian|thomas)/i;
+  const femaleRe = /(female|heera|neerja|swara|kalpana|zira|susan|samantha|veena|aria|jenny|hazel|sonia|natasha)/i;
   const notFemale = v => !femaleRe.test(v.name);
   if (lang === 'hi') {
     return voices.find(v => v.lang === 'hi-IN' && maleRe.test(v.name) && notFemale(v))
@@ -1047,10 +1073,13 @@ export default function OnboardingTour({ isOpen, onClose, theme = 'dark', onWatc
     runRef.current = run;
     const wantName = (lsGet('geo_voiceAssistVoices', null) || {})[lang] || '';
     const bcp = lang === 'hi' ? 'hi-IN' : 'en-IN';
+    // WEBSITE: never speak before the voice list exists (see waitForVoices).
+    const voices = webVoices.length ? webVoices : await waitForVoices();
+    if (run.cancelled) return;
     const u = new SpeechSynthesisUtterance(text);
     u.lang = bcp; // engine picks the language even without an explicit voice
     u.rate = 0.95;
-    const v = (wantName && webVoices.find(x => x.name === wantName)) || pickFallbackVoice(webVoices, lang);
+    const v = (wantName && voices.find(x => x.name === wantName)) || pickFallbackVoice(voices, lang);
     if (v) u.voice = v;
     window.speechSynthesis.speak(u);
   }, [ttsOk, stopSpeech, lang, nativeTts, webVoices]);
@@ -1178,8 +1207,14 @@ export default function OnboardingTour({ isOpen, onClose, theme = 'dark', onWatc
         {/* Rail — every stop, always reachable. Desktop: full vertical list
             with titles. Narrow: a horizontal strip of number badges only,
             so the split-stepper idea survives without crowding a phone. */}
+        {/* WEBSITE fix (5-Sep-2026), narrow rail: minWidth:0. A flex item's
+            default min-width is auto — its MIN-CONTENT width — so the
+            thirteen 30px pills (431px) set a floor the modal's
+            maxWidth:100% could not beat, and the whole card grew past a
+            375px phone, carrying ✕, 🔊 and the footer buttons off-screen to
+            the right. With the floor removed, overflowX:auto does its job. */}
         {IS_NARROW ? (
-          <div style={{ display: 'flex', gap: 8, padding: '12px 14px', overflowX: 'auto', borderBottom: '1px solid var(--geo-border)', flexShrink: 0 }}>
+          <div className="geo-scroll" style={{ display: 'flex', gap: 8, padding: '12px 14px', overflowX: 'auto', borderBottom: '1px solid var(--geo-border)', flexShrink: 0, minWidth: 0 }}>
             {SLIDES.map((s, i) => {
               const done = i < idx, activeR = i === idx;
               // The featured (Masterstroke) badge keeps its gold ✦ even when
@@ -1355,10 +1390,15 @@ export default function OnboardingTour({ isOpen, onClose, theme = 'dark', onWatc
             display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', flexShrink: 0,
             borderTop: '1px solid var(--geo-border)',
           }}>
-            {/* WEBSITE: the app's "Don't show this again" box is not needed here. */}
-            <span style={{ flex: 1, minWidth: 150, fontSize: 11.5, color: 'var(--geo-text-faint)' }}>
-              The same tour every new Geometriya account sees on first login.
-            </span>
+            {/* WEBSITE: the app's "Don't show this again" box is not needed
+                here. The line below is dropped on a phone so Skip / Next keep
+                a row to themselves instead of being pushed to a second one. */}
+            {!IS_NARROW && (
+              <span style={{ flex: 1, minWidth: 150, fontSize: 11.5, color: 'var(--geo-text-faint)' }}>
+                The same tour every new Geometriya account sees on first login.
+              </span>
+            )}
+            {IS_NARROW && <span style={{ flex: 1 }} />}
             {!started ? (
               <>
                 <button onClick={close} style={navBtn(false)}>Skip</button>

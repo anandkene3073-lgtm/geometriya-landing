@@ -419,7 +419,10 @@ const TUTOR_CHARS_PER_SEC = 13;
 // voice → Indian English → any English voice. Voices load asynchronously
 // in Chrome, so the first sentence waits for them — speaking before the
 // list is ready is what hands the engine its default (female) voice.
-const TUTOR_MALE_RE = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan)/i;
+// Android's Google TTS names voices "en-in-x-end#male_1-local", so the plain
+// male token matches there too; the female guard below is what keeps
+// "female_1" from counting as a male match.
+const TUTOR_MALE_RE = /(male|ravi|prabhat|madhur|hemant|rishi|david|mark|james|daniel|george|christopher|guy|ryan|arthur|brian|thomas)/i;
 const TUTOR_FEMALE_RE = /female/i;
 const isEn = v => /^en[-_]/i.test(v.lang);
 function pickTutorVoice(voices) {
@@ -431,14 +434,25 @@ function pickTutorVoice(voices) {
       || voices.find(isEn)
       || null;
 }
+// Android populates getVoices() asynchronously and is routinely empty for a
+// second or two; resolving early left the utterance with no voice, so the
+// engine used its own default — female on most phones (Anand, 5-Sep-2026).
+// Event, poll and a ceiling, because some engines never fire voiceschanged.
 function tutorVoices(synth) {
   return new Promise(resolve => {
     const now = synth.getVoices();
     if (now.length) { resolve(now); return; }
     let done = false;
-    const finish = () => { if (done) return; done = true; synth.removeEventListener('voiceschanged', finish); resolve(synth.getVoices()); };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearInterval(poll); clearTimeout(ceiling);
+      synth.removeEventListener('voiceschanged', finish);
+      resolve(synth.getVoices());
+    };
+    const poll = setInterval(() => { if (synth.getVoices().length) finish(); }, 200);
+    const ceiling = setTimeout(finish, 4000);
     synth.addEventListener('voiceschanged', finish);
-    setTimeout(finish, 1500);
   });
 }
 // The crop's own shape — the marker wrapper must keep it exactly, or the
